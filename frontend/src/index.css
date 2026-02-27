@@ -51,6 +51,108 @@
     }
 }
 
+/* === Form Input Styles (from editor/index.blade.php) === */
+.form-input-styled {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    color: #1e293b;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.form-input-styled:focus {
+    background: #fff;
+    border-color: #6366f1;
+    outline: none;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.1), 0 4px 6px -2px rgba(99, 102, 241, 0.05);
+    transform: translateY(-1px);
+}
+
+.form-input-styled:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.form-textarea-styled {
+    width: 100%;
+    padding: 1rem;
+    background: #f8fafc;
+    border: 2px solid transparent;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1e293b;
+    transition: all 0.3s ease;
+    resize: vertical;
+}
+
+.form-textarea-styled:focus {
+    background: #fff;
+    border-color: #6366f1;
+    outline: none;
+    box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.1);
+}
+
+.form-label-styled {
+    display: block;
+    font-size: 0.625rem;
+    font-weight: 900;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 0.5rem;
+}
+
+/* CKEditor container styling matching server CSS */
+.ck-editor-container .ck-editor__editable_inline {
+    min-height: 200px;
+    padding: 0 1.5rem !important;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.ck.ck-editor__top .ck-sticky-panel .ck-toolbar {
+    border-radius: 1rem 1rem 0 0 !important;
+    border: none !important;
+    background: #f1f5f9 !important;
+    padding: 0.5rem !important;
+}
+
+.ck-editor-container {
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+/* Section heading style matching Laravel's numbered sections */
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.section-heading h3 {
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-heading .divider {
+    height: 1px;
+    background: #f1f5f9;
+    flex: 1;
+}
+
+
 @layer components {
 
     /* --- Paper Styling --- */
