@@ -86,27 +86,29 @@ export const createDocumentSchema = z.object({
         status: z.string().optional(),
         content_data: z.record(z.any()).optional(),
         history_log: z.array(z.any()).optional(),
-        target: z.object({ type: z.string().optional(), value: z.string().optional() }).optional(),
+        target: z.object({ type: z.string().nullable().optional(), value: z.string().nullable().optional() }).optional(),
         folder_id: z.number().nullable().optional(),
         deadline: z.string().nullable().optional(),
         approval_count: z.number().min(0).max(10).optional(),
         approvals: z.array(approvalItemSchema).optional()
-    })
+    }).passthrough()
 });
 
 export const updateDocumentSchema = z.object({
     body: z.object({
+        title: z.string().max(255).optional(),
+        type: z.enum(['nota', 'sppd', 'perj']).optional(),
         status: z.string().optional(),
         content_data: z.record(z.any()).optional(),
         history_log: z.array(z.any()).optional(),
         feedback: z.string().nullable().optional(),
         forward_note: z.string().nullable().optional(),
-        target: z.object({ type: z.string().optional(), value: z.string().optional() }).optional(),
+        target: z.object({ type: z.string().nullable().optional(), value: z.string().nullable().optional() }).optional(),
         folder_id: z.number().nullable().optional(),
         deadline: z.string().nullable().optional(),
         increment_version: z.boolean().optional(),
         approvals: z.array(approvalItemSchema.extend({ status: z.string().optional() })).optional()
-    })
+    }).passthrough()
 });
 
 export const approveDocumentSchema = z.object({
