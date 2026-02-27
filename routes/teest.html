@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Perjanjian PT ASABRI</title>
+    <style>
+        /* Pengaturan Dasar Halaman */
+        body {
+            font-family: "Times New Roman", Times, serif;
+            background-color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .paper {
+            width: 210mm; /* Standar A4 */
+            min-height: 297mm;
+            padding: 25mm 20mm;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            color: #000;
+            line-height: 1.4;
+        }
+
+        /* Header / Judul */
+        .header {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            margin: 2px 0;
+        }
+
+        /* Isi Surat */
+        .content {
+            text-align: justify;
+            font-size: 12pt;
+        }
+
+        .opening-text {
+            margin-bottom: 15px;
+        }
+
+        /* List Pihak-Pihak */
+        .party-section {
+            display: flex;
+            margin-bottom: 15px;
+            align-items: flex-start;
+        }
+
+        .party-number {
+            width: 30px;
+            flex-shrink: 0;
+        }
+
+        .party-desc {
+            flex-grow: 1;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        /* Bagian Poin A, B, dst */
+        .point-section {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        .point-label {
+            width: 30px;
+            flex-shrink: 0;
+        }
+
+        /* Tabel Paraf Custom */
+        .paraf-container {
+            margin-top: 40px;
+            width: 100%;
+        }
+
+        .paraf-table {
+            border-collapse: collapse;
+            width: 85%; /* Sesuai proporsi gambar */
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+        }
+
+        .paraf-table td {
+            border: 1px solid black;
+            text-align: center;
+            padding: 4px 8px;
+            vertical-align: middle;
+        }
+
+        .col-paraf-label {
+            width: 40px;
+            font-weight: normal;
+        }
+
+        .row-code {
+            height: 20px;
+            font-weight: normal;
+        }
+
+        .row-name {
+            height: 20px;
+        }
+
+        .row-signature {
+            height: 65px; /* Ruang luas untuk tanda tangan basah */
+        }
+
+        .cell-width {
+            width: 100px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="paper">
+    <div class="header">
+        <p>PERJANJIAN KERJA SAMA</p>
+        <p>ANTARA</p>
+        <p>PT ASABRI (PERSERO)</p>
+        <p>DENGAN</p>
+        <p>NIREKA UDAY SELVY</p>
+        <p>TENTANG</p>
+        <p>SEWA MENYEWA UNIT APARTEMEN MILIK PT ASABRI (PERSERO) DI NIFARRO PARK</p>
+        <p>NOMOR: PERJ-8/HK.02.01/F/I/2026</p>
+    </div>
+
+    <div class="content">
+        <p class="opening-text">
+            Pada hari ini <span class="bold">Senin</span>, tanggal <span class="bold">sembilan belas</span> bulan <span class="bold">Januari</span> tahun <span class="bold">dua ribu dua puluh enam (19-01-2026)</span> bertempat di Jakarta, kami yang bertanda tangan di bawah ini:
+        </p>
+
+        <div class="party-section">
+            <div class="party-number">1.</div>
+            <div class="party-desc">
+                <span class="bold">PT ASABRI (Persero)</span>, suatu Perseroan Terbatas yang didirikan berdasarkan Hukum Negara Republik Indonesia, yang berkedudukan di Jalan Mayjen Sutoyo Nomor 11 Jakarta Timur, dalam hal ini diwakili oleh <span class="bold">Hari Murti</span> dalam jabatannya selaku <span class="bold">Kepala Divisi Manajemen Investasi PT ASABRI (Persero)</span> berdasarkan Surat Kuasa Nomor SK-8/HK.01.05/INV.F/I/2026 tanggal 2 Januari 2026, yang Anggaran Dasarnya telah diubah seluruhnya sebagaimana dimuat dalam akta tanggal 17 Juli 2025 Nomor 26, yang dibuat di hadapan Indah Khaerunnisa, S.H., M.Kn., Notaris di Jakarta, dimana perubahan terakhir dari susunan Direksi perseroan terbatas tersebut termuat dalam akta tanggal 27 Desember 2024 Nomor 51 yang dibuat oleh Indah Khaerunnisa, S.H., M.Kn., Notaris di Jakarta Timur, dan oleh karena itu sah bertindak untuk dan atas nama PT ASABRI (Persero), untuk selanjutnya disebut <span class="bold">"Pihak Kesatu"</span>; dan
+            </div>
+        </div>
+
+        <div class="party-section">
+            <div class="party-number">2.</div>
+            <div class="party-desc">
+                <span class="bold">Nireka Uday Selvy</span>, lahir di Jakarta, pada tanggal 25 Maret 2000, dengan alamat Apartemen Fountain Park Griya Pancoran Unit.P.ID, RT002/RW002, Kelurahan Pancoran, Kecamatan Pancoran, Kota Jakarta Selatan, Provinsi DKI Jakarta, pemegang Kartu Tanda Penduduk dengan Nomor Induk Kependudukan 3172026503000006, dan untuk selanjutnya disebut <span class="bold">"Pihak Kedua"</span>.
+            </div>
+        </div>
+
+        <p>Pihak Kesatu dan Pihak Kedua selanjutnya secara bersama-sama disebut sebagai <span class="bold">"Para Pihak"</span> dan masing-masing disebut <span class="bold">"Pihak"</span>, serta dalam kedudukannya sebagaimana tersebut di atas, terlebih dulu menerangkan hal-hal sebagai berikut:</p>
+
+        <div class="point-section">
+            <div class="point-label">A.</div>
+            <div class="party-desc">
+                Bahwa Pihak Kesatu adalah Badan Usaha Milik Negara selaku pengelola program yang menyelenggarakan pembayaran manfaat Asuransi Sosial Prajurit Tentara Nasional Indonesia, Anggota Kepolisian Negara Republik Indonesia, dan Pegawai Aparatur Sipil Negara di lingkungan Kementerian Pertahanan dan Kepolisian Negara Republik Indonesia.
+            </div>
+        </div>
+
+        <div class="paraf-container">
+            <table class="paraf-table">
+                <tr>
+                    <td rowspan="3" class="col-paraf-label">Paraf</td>
+                    <td class="cell-width">DV-KHK</td>
+                    <td class="cell-width">DV-SPR</td>
+                    <td class="cell-width">DV-KEU</td>
+                    <td class="cell-width">DV-MIV</td>
+                    <td class="cell-width">BD-PIL</td>
+                </tr>
+                <tr class="row-name">
+                    <td>Mardia Y. R.</td>
+                    <td>Okki J.</td>
+                    <td>Widya D. S.</td>
+                    <td>Hari M.</td>
+                    <td>Andri G.</td>
+                </tr>
+                <tr class="row-signature">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,227 @@
+@import "tailwindcss";
+
+/* 
+ * DOF Custom Styling Rules mirroring the Laravel implementation
+ * Uses identical classes but setup specifically via Tailwind V4 conventions 
+ */
+
+@theme {
+    /* Define extended theme configurations if necessary */
+}
+
+/* Custom Utilities copied over representing existing layout rules */
+@layer utilities {
+    .glass-effect {
+        @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-xl;
+    }
+
+    .glass-panel {
+        @apply bg-white/80 backdrop-blur-sm border border-white/50 shadow-lg;
+    }
+
+    .status-badge {
+        @apply px-3 py-1 rounded-full text-xs font-semibold;
+    }
+
+    /* Document Editing Utilities */
+    .editor-container {
+        @apply max-w-4xl mx-auto bg-white shadow-xl min-h-screen p-8 my-8 text-black;
+    }
+
+    /* Kop Surat */
+    .kop-surat {
+        @apply border-b-4 border-black pb-4 mb-8 flex items-center justify-between;
+    }
+
+    /* Animasi */
+    .fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+}
+
+@layer components {
+
+    /* --- Paper Styling --- */
+    .paper {
+        width: 210mm;
+        padding: 15mm 20mm 15mm 25mm;
+        background: white;
+        font-family: var(--font-serif);
+        font-size: 11pt;
+        line-height: 1.4;
+        color: black;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin: auto;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        word-break: normal;
+        height: auto;
+        position: relative;
+    }
+
+    .paper div,
+    .paper p,
+    .paper span {
+        max-width: 100%;
+    }
+
+    @media screen {
+        .paper {
+            min-height: 297mm;
+        }
+    }
+
+    /* --- Common Elements --- */
+    .paper-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .info-table td {
+        vertical-align: top;
+        padding-bottom: 4px;
+    }
+
+    /* --- Signature Section --- */
+    .signature-section {
+        margin-top: 30px;
+        float: right;
+        text-align: center;
+        width: 280px;
+    }
+
+    /* --- SPPD Specific Styles --- */
+    .sppd-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+    }
+
+    .sppd-table td {
+        vertical-align: top;
+        text-align: justify;
+    }
+
+    .sppd-label {
+        width: 100px;
+        font-weight: bold;
+    }
+
+    .sppd-colon {
+        width: 20px;
+        text-align: center;
+    }
+
+    .list-numbered {
+        list-style-type: decimal;
+        margin-left: 25px;
+        padding-left: 5px;
+    }
+
+    .sub-table td {
+        padding: 1px 0;
+    }
+
+    /* --- Nota Dinas Specific --- */
+    .paraf-box {
+        margin-top: 30px;
+        border: 1px solid black;
+        width: 150px;
+        font-size: 10pt;
+        border-collapse: collapse;
+    }
+
+    .paraf-box td {
+        border: 1px solid black;
+        padding: 2px 5px;
+    }
+
+    /* --- Perjanjian Specific --- */
+    .paraf-container {
+        margin-top: 40px;
+        width: 100%;
+    }
+
+    .paraf-table {
+        border-collapse: collapse;
+        width: auto;
+        min-width: 300px;
+        max-width: 85%;
+        font-family: Arial, sans-serif;
+        font-size: 10pt;
+        margin-left: auto;
+    }
+
+    .paraf-table td {
+        border: 1px solid black;
+        text-align: center;
+        padding: 4px 8px;
+        vertical-align: middle;
+        background-color: white !important;
+    }
+
+    .paraf-table .col-paraf-label {
+        width: 40px;
+        font-weight: normal;
+    }
+
+    .paraf-table .cell-width {
+        width: 100px;
+    }
+
+    .paraf-table .row-name {
+        height: 20px;
+    }
+
+    .paraf-table .row-signature {
+        height: 65px;
+    }
+
+    /* Utility */
+    .tab-active {
+        @apply bg-blue-600 text-white border-blue-600;
+    }
+
+    .tab-inactive {
+        @apply bg-white text-gray-700 border-gray-300;
+    }
+
+    /* Scrollbar */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        @apply bg-slate-300 rounded-full;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        @apply bg-slate-400;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+}

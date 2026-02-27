@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASABRI Document Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tinos:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* --- Paper Styling --- */
+        .paper {
+            width: 210mm;
+            padding: 15mm 20mm 15mm 25mm; 
+            background: white;
+            font-family: 'Tinos', 'Times New Roman', serif;
+            font-size: 11pt; 
+            line-height: 1.4;
+            color: black;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            margin: auto;
+            overflow: hidden; 
+            height: auto; 
+            position: relative;
+        }
+
+        @media screen {
+            .paper { min-height: 297mm; }
+        }
+
+        /* --- Common Elements --- */
+        .paper-header { text-align: center; margin-bottom: 20px; }
+        .info-table td { vertical-align: top; padding-bottom: 4px; }
+        
+        /* --- Signature Section --- */
+        .signature-section {
+            margin-top: 30px;
+            float: right;
+            text-align: center;
+            width: 280px;
+        }
+
+        /* --- SPPD Specific Styles --- */
+        .sppd-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .sppd-table td { vertical-align: top; text-align: justify; }
+        .sppd-label { width: 100px; font-weight: bold; }
+        .sppd-colon { width: 20px; text-align: center; }
+        
+        .list-numbered { list-style-type: decimal; margin-left: 25px; padding-left: 5px; }
+        .sub-table td { padding: 1px 0; }
+
+        /* --- Nota Dinas Specific --- */
+        .paraf-box {
+            margin-top: 30px;
+            border: 1px solid black;
+            width: 150px;
+            font-size: 10pt;
+            border-collapse: collapse;
+        }
+        .paraf-box td { border: 1px solid black; padding: 2px 5px; }
+
+        /* Utility */
+        .hidden { display: none !important; }
+        .tab-active { background-color: #2563eb; color: white; border-color: #2563eb; }
+        .tab-inactive { background-color: white; color: #374151; border-color: #d1d5db; }
+    </style>
+</head>
+<body>
+
+<div class="flex flex-col lg:flex-row h-screen overflow-hidden">
+    
+    <div class="w-full lg:w-1/3 bg-white p-0 flex flex-col border-r border-gray-200 shadow-lg z-10 h-full">
+        
+        <div class="flex p-4 bg-gray-50 border-b gap-2">
+            <button onclick="switchTab('nota')" id="tabNota" class="flex-1 py-2 px-4 rounded font-bold border transition tab-active">Nota Dinas</button>
+            <button onclick="switchTab('sppd')" id="tabSppd" class="flex-1 py-2 px-4 rounded font-bold border transition tab-inactive">Surat Perintah</button>
+        </div>
+
+        <div class="p-6 overflow-y-auto flex-grow">
+            <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Input Data</h2>
+            
+            <form id="mainForm" class="space-y-4">
+                
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-700">Nomor Dokumen</label>
+                    <input type="text" id="docNumber" class="w-full p-2 border rounded" placeholder=".../..." oninput="updateAll()">
+                </div>
+
+                <div id="inputsNota" class="space-y-4">
+                    <div class="grid grid-cols-1 gap-4">
+                        <input type="text" id="notaTo" class="w-full p-2 border rounded" placeholder="Kepada (Yth...)" oninput="updateAll()">
+                        <input type="text" id="notaFrom" class="w-full p-2 border rounded" placeholder="Dari" oninput="updateAll()">
+                        <input type="text" id="notaAtt" class="w-full p-2 border rounded" placeholder="Lampiran" oninput="updateAll()">
+                        <textarea id="notaSubject" rows="2" class="w-full p-2 border rounded" placeholder="Hal / Perihal" oninput="updateAll()"></textarea>
+                    </div>
+
+                    <hr>
+                    <label class="block text-sm font-medium text-gray-700">Berdasarkan (Poin)</label>
+                    <div id="notaBasisContainer" class="space-y-2">
+                        <div class="flex gap-2 item-row"><input type="text" class="nota-basis-input w-full p-2 border rounded" placeholder="Poin..." oninput="updateAll()"></div>
+                    </div>
+                    <button type="button" onclick="addList('notaBasisContainer', 'nota-basis-input')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">+ Tambah Poin</button>
+
+                    <label class="block text-sm font-medium text-gray-700 mt-2">Isi Paragraf</label>
+                    <textarea id="notaContent" rows="4" class="w-full p-2 border rounded" placeholder="Sehubungan dengan..." oninput="updateAll()"></textarea>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="notaLoc" class="w-full p-2 border rounded" placeholder="Lokasi (Jakarta)" oninput="updateAll()">
+                        <input type="date" id="notaDate" class="w-full p-2 border rounded" oninput="updateAll()">
+                    </div>
+                    <input type="text" id="notaPos" class="w-full p-2 border rounded" placeholder="Jabatan" oninput="updateAll()">
+                    <input type="text" id="notaDiv" class="w-full p-2 border rounded" placeholder="Divisi" oninput="updateAll()">
+                    <input type="text" id="notaName" class="w-full p-2 border rounded" placeholder="Nama Penandatangan" oninput="updateAll()">
+                </div>
+
+                <div id="inputsSppd" class="hidden space-y-4">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Menimbang</label>
+                        <textarea id="sppdWeigh" rows="3" class="w-full p-2 border rounded" placeholder="bahwa dalam rangka..." oninput="updateAll()"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Mengingat (List)</label>
+                        <div id="sppdRememberContainer" class="space-y-2">
+                            <div class="flex gap-2 item-row"><input type="text" class="sppd-rem-input w-full p-2 border rounded" placeholder="Peraturan..." oninput="updateAll()"></div>
+                        </div>
+                        <button type="button" onclick="addList('sppdRememberContainer', 'sppd-rem-input')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">+ Tambah</button>
+                    </div>
+
+                    <hr>
+                    <input type="text" id="sppdTo" class="w-full p-2 border rounded" placeholder="Kepada (Nama & Jabatan)" oninput="updateAll()">
+
+                    <div class="bg-gray-50 p-3 rounded border">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Detail Perintah (Untuk)</label>
+                        
+                        <label class="text-xs text-gray-500">Poin 1: Kegiatan</label>
+                        <input type="text" id="sppdTask" class="w-full p-2 border rounded mb-2" placeholder="Melaksanakan kegiatan..." oninput="updateAll()">
+                        
+                        <label class="text-xs text-gray-500">Poin 2: Detail Perjalanan</label>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <input type="text" id="sppdDest" class="p-2 border rounded" placeholder="Tujuan (Denpasar)" oninput="updateAll()">
+                            <input type="text" id="sppdTransport" class="p-2 border rounded" placeholder="Pesawat Udara" oninput="updateAll()">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <div><span class="text-xs">Berangkat</span><input type="date" id="sppdDateGo" class="w-full p-2 border rounded" oninput="updateAll()"></div>
+                            <div><span class="text-xs">Kembali</span><input type="date" id="sppdDateBack" class="w-full p-2 border rounded" oninput="updateAll()"></div>
+                        </div>
+
+                        <label class="text-xs text-gray-500">Poin 3, 4, 5 (Standar/Edit)</label>
+                        <textarea id="sppdFunding" rows="2" class="w-full p-2 border rounded mb-1" placeholder="Biaya dibebankan..." oninput="updateAll()"></textarea>
+                        <textarea id="sppdReport" rows="2" class="w-full p-2 border rounded mb-1" placeholder="Melaporkan pelaksanaan..." oninput="updateAll()"></textarea>
+                        <textarea id="sppdClose" rows="1" class="w-full p-2 border rounded" placeholder="Melaksanakan dengan tanggung jawab." oninput="updateAll()"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="sppdLoc" class="w-full p-2 border rounded" placeholder="Lokasi" oninput="updateAll()">
+                        <input type="date" id="sppdSignDate" class="w-full p-2 border rounded" oninput="updateAll()">
+                    </div>
+                    <input type="text" id="sppdSignPos" class="w-full p-2 border rounded" placeholder="DIREKTUR UTAMA" oninput="updateAll()">
+                    <input type="text" id="sppdSignName" class="w-full p-2 border rounded" placeholder="Nama Penandatangan" oninput="updateAll()">
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Tembusan</label>
+                        <div id="sppdCCContainer" class="space-y-2">
+                            <div class="flex gap-2 item-row"><input type="text" class="sppd-cc-input w-full p-2 border rounded" placeholder="Direksi..." oninput="updateAll()"></div>
+                        </div>
+                        <button type="button" onclick="addList('sppdCCContainer', 'sppd-cc-input')" class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">+ Tambah</button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
+        <div class="p-4 bg-white border-t flex flex-col gap-2">
+            <button onclick="downloadPDF()" class="w-full bg-blue-600 text-white py-3 rounded font-bold hover:bg-blue-700 shadow flex justify-center items-center gap-2">
+                <span>DOWNLOAD PDF</span>
+            </button>
+            <button onclick="resetForm()" class="w-full bg-white text-gray-700 border py-2 rounded font-bold hover:bg-gray-100 flex justify-center items-center gap-2 text-sm">
+                <span>RESET ALL</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="w-full lg:w-2/3 bg-gray-500 overflow-y-auto p-8 flex justify-center">
+        
+        <div id="paperContent" class="paper relative">
+            
+            <div class="flex items-center mb-2">
+                <img src="https://pensiun.asabri.co.id/resources/img/logo_asa.png" alt="ASABRI Logo" class="h-16 mb-2">
+            </div>
+
+            <div id="previewNota">
+                <div class="paper-header">
+                    <h1 class="font-bold text-lg uppercase tracking-wide">NOTA DINAS</h1>
+                    <p>NOMOR <span class="prev-docNum">...</span></p>
+                </div>
+
+                <table class="info-table w-full mb-6">
+                    <tr><td width="100">Kepada</td><td width="20">:</td><td>Yth. <span id="prevNotaTo">...</span></td></tr>
+                    <tr><td>Dari</td><td>:</td><td><span id="prevNotaFrom">...</span></td></tr>
+                    <tr><td>Lampiran</td><td>:</td><td><span id="prevNotaAtt">...</span></td></tr>
+                    <tr><td>Hal</td><td>:</td><td class="font-bold"><span id="prevNotaSubject">...</span></td></tr>
+                </table>
+
+                <div class="mb-4">
+                    <p class="mb-2">Berdasarkan:</p>
+                    <ol id="prevNotaBasisList" class="list-numbered text-justify"></ol>
+                </div>
+
+                <div class="mb-8 text-justify leading-relaxed">
+                    <p id="prevNotaContent" style="white-space: pre-wrap;">...</p>
+                </div>
+
+                <p class="mb-8">Demikian disampaikan dan untuk dijadikan periksa.</p>
+
+                <div class="signature-section">
+                    <p class="mb-1"><span id="prevNotaLoc">...</span>, <span id="prevNotaDate">...</span></p>
+                    <p class="font-bold uppercase mb-0"><span id="prevNotaPos">...</span></p>
+                    <p class="font-bold uppercase mb-16"><span id="prevNotaDiv">...</span></p>
+                    <p class="font-bold uppercase underline"><span id="prevNotaName">...</span></p>
+                </div>
+
+                <div style="clear: both;"></div>
+                <table class="paraf-box">
+                    <tr><td colspan="2" class="text-center font-bold bg-gray-100">BD-MLI</td></tr>
+                    <tr><td rowspan="2" class="text-center align-middle" width="50%">Paraf</td><td class="text-center">Staff</td></tr>
+                    <tr><td class="text-center" height="30"> </td></tr>
+                </table>
+            </div>
+
+            <div id="previewSppd" class="hidden">
+                <div class="paper-header" style="margin-bottom: 30px;">
+                    <h1 class="font-bold text-lg uppercase tracking-wide">SURAT PERINTAH PERJALANAN DINAS</h1>
+                    <p>NOMOR <span class="prev-docNum">...</span></p>
+                </div>
+
+                <table class="sppd-table">
+                    <tr>
+                        <td class="sppd-label">Menimbang</td>
+                        <td class="sppd-colon">:</td>
+                        <td><span id="prevSppdWeigh">...</span></td>
+                    </tr>
+                </table>
+
+                <table class="sppd-table">
+                    <tr>
+                        <td class="sppd-label">Mengingat</td>
+                        <td class="sppd-colon">:</td>
+                        <td>
+                            <ol id="prevSppdRememberList" class="list-numbered" style="margin-top: 0; margin-bottom: 0; padding-left: 15px;"></ol>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="text-center font-bold my-6">Memberi Perintah</div>
+
+                <table class="sppd-table">
+                    <tr>
+                        <td class="sppd-label">Kepada</td>
+                        <td class="sppd-colon"></td>
+                        <td class="font-bold"><span id="prevSppdTo">...</span></td>
+                    </tr>
+                </table>
+
+                <table class="sppd-table">
+                    <tr>
+                        <td class="sppd-label">Untuk</td>
+                        <td class="sppd-colon">:</td>
+                        <td>
+                            <ol class="list-numbered" style="margin-top: 0; padding-left: 15px;">
+                                <li class="mb-2"><span id="prevSppdTask">...</span></li>
+                                
+                                <li class="mb-2">
+                                    Perjalanan dinas dilaksanakan, sebagai berikut:
+                                    <table class="sub-table w-full mt-1">
+                                        <tr><td width="100">Tujuan</td><td width="10">:</td><td><span id="prevSppdDest">...</span></td></tr>
+                                        <tr><td>Berangkat</td><td>:</td><td><span id="prevSppdDateGo">...</span></td></tr>
+                                        <tr><td>Kembali</td><td>:</td><td><span id="prevSppdDateBack">...</span></td></tr>
+                                        <tr><td>Transportasi</td><td>:</td><td><span id="prevSppdTransport">...</span></td></tr>
+                                    </table>
+                                </li>
+
+                                <li class="mb-2 text-justify"><span id="prevSppdFunding">...</span></li>
+                                <li class="mb-2 text-justify"><span id="prevSppdReport">...</span></li>
+                                <li class="mb-2 text-justify"><span id="prevSppdClose">...</span></li>
+                            </ol>
+                        </td>
+                    </tr>
+                </table>
+
+                <div class="signature-section">
+                    <p class="mb-1">Dikeluarkan di <span id="prevSppdLoc">...</span></p>
+                    <p class="mb-1">pada tanggal <span id="prevSppdSignDate">...</span></p>
+                    <p class="font-bold uppercase mb-0">DIREKSI,</p>
+                    <p class="font-bold uppercase mb-16"><span id="prevSppdSignPos">...</span></p>
+                    <p class="font-bold uppercase underline"><span id="prevSppdSignName">...</span></p>
+                </div>
+
+                <div style="clear: both;"></div>
+                
+                <div class="mt-8 text-sm">
+                    <p class="font-bold underline mb-1">Tembusan:</p>
+                    <ol id="prevSppdCCList" class="list-numbered" style="margin-left: 15px;"></ol>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentTab = 'nota'; // Default
+
+    // --- Tab Switching Logic ---
+    function switchTab(tab) {
+        currentTab = tab;
+        
+        // Buttons UI
+        document.getElementById('tabNota').className = tab === 'nota' ? 'flex-1 py-2 px-4 rounded font-bold border transition tab-active' : 'flex-1 py-2 px-4 rounded font-bold border transition tab-inactive';
+        document.getElementById('tabSppd').className = tab === 'sppd' ? 'flex-1 py-2 px-4 rounded font-bold border transition tab-active' : 'flex-1 py-2 px-4 rounded font-bold border transition tab-inactive';
+
+        // Show/Hide Forms
+        document.getElementById('inputsNota').classList.toggle('hidden', tab !== 'nota');
+        document.getElementById('inputsSppd').classList.toggle('hidden', tab !== 'sppd');
+
+        // Show/Hide Preview Sections
+        document.getElementById('previewNota').classList.toggle('hidden', tab !== 'nota');
+        document.getElementById('previewSppd').classList.toggle('hidden', tab !== 'sppd');
+
+        updateAll();
+    }
+
+    // --- Form handling ---
+    function getIndoDate(dateStr) {
+        if (!dateStr) return '...';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function updateAll() {
+        // Shared: Document Number
+        const docNum = document.getElementById('docNumber').value || '...';
+        document.querySelectorAll('.prev-docNum').forEach(el => el.innerText = docNum);
+
+        if (currentTab === 'nota') {
+            // Nota Mappings
+            setText('prevNotaTo', 'notaTo');
+            setText('prevNotaFrom', 'notaFrom');
+            setText('prevNotaAtt', 'notaAtt');
+            setText('prevNotaSubject', 'notaSubject');
+            setText('prevNotaContent', 'notaContent');
+            setText('prevNotaLoc', 'notaLoc');
+            setText('prevNotaPos', 'notaPos');
+            setText('prevNotaDiv', 'notaDiv');
+            setText('prevNotaName', 'notaName');
+            
+            setDate('prevNotaDate', 'notaDate');
+
+            updateList('notaBasisContainer', 'prevNotaBasisList', 'nota-basis-input');
+        } 
+        else if (currentTab === 'sppd') {
+            // SPPD Mappings
+            setText('prevSppdWeigh', 'sppdWeigh');
+            setText('prevSppdTo', 'sppdTo');
+            setText('prevSppdTask', 'sppdTask');
+            setText('prevSppdDest', 'sppdDest');
+            setText('prevSppdTransport', 'sppdTransport');
+            setText('prevSppdFunding', 'sppdFunding');
+            setText('prevSppdReport', 'sppdReport');
+            setText('prevSppdClose', 'sppdClose');
+            setText('prevSppdLoc', 'sppdLoc');
+            setText('prevSppdSignPos', 'sppdSignPos');
+            setText('prevSppdSignName', 'sppdSignName');
+
+            setDate('prevSppdDateGo', 'sppdDateGo');
+            setDate('prevSppdDateBack', 'sppdDateBack');
+            setDate('prevSppdSignDate', 'sppdSignDate');
+
+            updateList('sppdRememberContainer', 'prevSppdRememberList', 'sppd-rem-input');
+            updateList('sppdCCContainer', 'prevSppdCCList', 'sppd-cc-input');
+        }
+    }
+
+    // Helper: Set text with fallback
+    function setText(targetId, sourceId) {
+        const val = document.getElementById(sourceId).value;
+        document.getElementById(targetId).innerText = val.trim() ? val : '...';
+    }
+
+    // Helper: Set Date
+    function setDate(targetId, sourceId) {
+        const val = document.getElementById(sourceId).value;
+        document.getElementById(targetId).innerText = getIndoDate(val);
+    }
+
+    // Helper: Update Dynamic Lists
+    function updateList(containerId, listId, inputClass) {
+        const inputs = document.getElementById(containerId).getElementsByClassName(inputClass);
+        const list = document.getElementById(listId);
+        list.innerHTML = '';
+        
+        let hasItem = false;
+        Array.from(inputs).forEach(input => {
+            if (input.value.trim()) {
+                hasItem = true;
+                const li = document.createElement('li');
+                li.innerText = input.value;
+                li.className = "mb-1 pl-1";
+                list.appendChild(li);
+            }
+        });
+
+        if (!hasItem) {
+            const li = document.createElement('li');
+            li.innerText = '...';
+            li.style.listStyle = 'none';
+            list.appendChild(li);
+        }
+    }
+
+    // --- Dynamic Inputs Logic ---
+    function addList(containerId, inputClass) {
+        const container = document.getElementById(containerId);
+        const div = document.createElement('div');
+        div.className = 'flex gap-2 item-row mt-2';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = `${inputClass} w-full p-2 border rounded`;
+        input.placeholder = 'Poin selanjutnya...';
+        input.oninput = updateAll;
+
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '&times;';
+        delBtn.className = 'px-3 border rounded text-red-500 hover:bg-red-50';
+        delBtn.type = 'button';
+        delBtn.onclick = function() {
+            container.removeChild(div);
+            updateAll();
+        };
+
+        div.appendChild(input);
+        div.appendChild(delBtn);
+        container.appendChild(div);
+    }
+
+    function resetForm() {
+        if(confirm("Reset semua input?")) {
+            document.getElementById('mainForm').reset();
+            
+            // Reset Lists to 1 item
+            resetListContainer('notaBasisContainer', 'nota-basis-input');
+            resetListContainer('sppdRememberContainer', 'sppd-rem-input');
+            resetListContainer('sppdCCContainer', 'sppd-cc-input');
+            
+            // Set Today's date
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('notaDate').value = today;
+            document.getElementById('sppdSignDate').value = today;
+
+            updateAll();
+        }
+    }
+
+    function resetListContainer(containerId, inputClass) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = `<div class="flex gap-2 item-row"><input type="text" class="${inputClass} w-full p-2 border rounded" placeholder="..." oninput="updateAll()"></div>`;
+    }
+
+    function downloadPDF() {
+        const element = document.getElementById('paperContent');
+        const fileName = currentTab === 'nota' ? 'Nota_Dinas.pdf' : 'Surat_Perintah_SPPD.pdf';
+
+        // NOTE: For external images to work in html2pdf/canvas, the server must support CORS.
+        // If the ASABRI logo appears blank in the PDF but shows on screen, it means their server blocked the capture.
+        const images = element.getElementsByTagName('img');
+        if(images.length > 0 && !images[0].complete) {
+            images[0].onload = generate;
+        } else {
+            generate();
+        }
+
+        function generate() {
+            element.style.minHeight = 'unset'; // Fix blank page
+            const opt = {
+                margin: 0,
+                filename: fileName,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true, // Attempt to load external image
+                    allowTaint: true 
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.style.minHeight = '';
+            });
+        }
+    }
+
+    // Init
+    document.getElementById('notaDate').valueAsDate = new Date();
+    document.getElementById('sppdSignDate').valueAsDate = new Date();
+    updateAll();
+
+</script>
+
+</body>
+</html>
