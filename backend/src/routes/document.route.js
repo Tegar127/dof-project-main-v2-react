@@ -17,10 +17,12 @@ router.use(requireAuth);
 
 // Core Document Routes
 router.get('/', documentController.getAllDocuments);
-router.post('/', validate(createDocumentSchema), documentController.createDocument);
+router.post('/', documentController.createDocument);
 router.get('/:id', documentController.getDocument);
-router.put('/:id', validate(updateDocumentSchema), documentController.updateDocument);
+router.put('/:id', documentController.updateDocument);
 router.delete('/:id', documentController.deleteDocument);
+
+
 
 // Document Sub-resources (Logs, Versions)
 router.get('/:id/logs', documentController.getLogs);
