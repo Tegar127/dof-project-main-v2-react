@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -222,11 +222,11 @@ const DocumentViewer = () => {
                                                 <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                                                     <div className="flex items-center justify-between space-x-2 mb-1">
                                                         <div className="font-bold text-slate-900 text-sm">{log.action}</div>
-                                                        <time className="font-mono text-xs font-medium text-emerald-600">v{log.version}</time>
+                                                        {log.new_status && <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded">{log.new_status}</span>}
                                                     </div>
-                                                    <div className="text-xs text-slate-500 mb-2">{new Date(log.created_at).toLocaleString()} by {log.user?.name || log.user_name}</div>
-                                                    {log.notes && <div className="text-sm text-slate-700 bg-slate-50 p-2 rounded">{log.notes}</div>}
-                                                    {log.changes && <div className="text-xs text-slate-500 mt-2 italic whitespace-pre-wrap">{log.changes}</div>}
+                                                    <div className="text-xs text-slate-500 mb-2">{new Date(log.created_at).toLocaleString()} by {log.user_name || '-'}</div>
+                                                    {log.details && <div className="text-sm text-slate-700 bg-slate-50 p-2 rounded">{log.details}</div>}
+                                                    {log.changes_summary && <div className="text-xs text-blue-700 bg-blue-50/50 border border-blue-100 mt-2 p-2 rounded font-mono whitespace-pre-wrap">{log.changes_summary}</div>}
                                                 </div>
                                             </div>
                                         ))}

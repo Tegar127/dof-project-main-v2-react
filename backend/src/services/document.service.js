@@ -1,6 +1,121 @@
 import * as documentRepository from '../repositories/document.repository.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
 
+// Human-readable labels for content_data fields
+const FIELD_LABELS = {
+    // Nota Dinas
+    docNumber: 'Nomor Surat',
+    date: 'Tanggal',
+    to: 'Tujuan',
+    cc: 'Tembusan',
+    ccs: 'Tembusan',
+    from: 'Dari',
+    plh_pjs: 'Status Jabatan',
+    subject: 'Perihal',
+    content: 'Isi Surat',
+    body: 'Isi Surat',
+    closing: 'Kalimat Penutup',
+    location: 'Tempat',
+    signerName: 'Nama Penandatangan',
+    signerPosition: 'Jabatan Penandatangan',
+    paraf: 'Paraf',
+    basis: 'Dasar Pelaksanaan',
+    remembers: 'Menimbang',
+    basisStyle: 'Gaya Penomoran',
+    deadline: 'Batas Waktu',
+    title: 'Judul',
+    // SPPD fields
+    travelerName: 'Nama Pelaksana',
+    travelerPosition: 'Jabatan Pelaksana',
+    travelerNip: 'NIP Pelaksana',
+    travelerGrade: 'Golongan',
+    destination: 'Kota Tujuan',
+    purpose: 'Tujuan Perjalanan',
+    startDate: 'Tanggal Berangkat',
+    endDate: 'Tanggal Kembali',
+    days: 'Jumlah Hari',
+    transport: 'Transportasi',
+    accommodation: 'Akomodasi',
+    chargedTo: 'Biaya Dibebankan',
+    // Perjanjian fields
+    partyA: 'Pihak Pertama',
+    partyAPos: 'Jabatan Pihak Pertama',
+    partyB: 'Pihak Kedua',
+    partyBPos: 'Jabatan Pihak Kedua',
+    agreementDate: 'Tanggal Perjanjian',
+    agreementNumber: 'Nomor Perjanjian',
+    agreementSubject: 'Perihal Perjanjian',
+    clauses: 'Pasal/Klausul',
+};
+
+// Strip HTML tags for readable display
+const stripHtml = (html) => {
+    if (!html || typeof html !== 'string') return '';
+    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+};
+
+/**
+ * Compare two content_data objects and return a human-readable summary of changes.
+ */
+const generateChangeSummary = (oldData = {}, newData = {}) => {
+    const changes = [];
+    const allKeys = new Set([...Object.keys(oldData || {}), ...Object.keys(newData || {})]);
+
+    for (const key of allKeys) {
+        const label = FIELD_LABELS[key];
+        if (!label) continue; // skip unlabeled internal fields
+
+        const oldVal = oldData[key];
+        const newVal = newData[key];
+        const oldStr = JSON.stringify(oldVal);
+        const newStr = JSON.stringify(newVal);
+
+        if (oldStr !== newStr) {
+            // Format values for readability
+            let oldDisplay = formatFieldValue(oldVal, key);
+            let newDisplay = formatFieldValue(newVal, key);
+
+            // Truncate long strings
+            if (oldDisplay.length > 100) oldDisplay = oldDisplay.substring(0, 100) + '...';
+            if (newDisplay.length > 100) newDisplay = newDisplay.substring(0, 100) + '...';
+
+            if (oldDisplay && newDisplay) {
+                changes.push(`• ${label}: "${oldDisplay}" → "${newDisplay}"`);
+            } else if (newDisplay) {
+                changes.push(`• ${label} diisi: "${newDisplay}"`);
+            } else if (oldDisplay) {
+                changes.push(`• ${label} dihapus`);
+            }
+        }
+    }
+
+    return changes.length > 0 ? changes.join('\n') : null;
+};
+
+const formatFieldValue = (val, key = '') => {
+    if (val === null || val === undefined || val === '') return '';
+    // Strip HTML for CKEditor content fields
+    if ((key === 'content' || key === 'body') && typeof val === 'string') {
+        return stripHtml(val);
+    }
+    if (Array.isArray(val)) {
+        if (val.length === 0) return '';
+        // Array of strings
+        if (typeof val[0] === 'string') return val.filter(Boolean).join(', ');
+        // Array of objects with 'text'
+        if (typeof val[0] === 'object' && val[0]?.text !== undefined) {
+            return val.map(v => v.text).filter(Boolean).join(', ');
+        }
+        // Array of objects (paraf)
+        if (typeof val[0] === 'object') {
+            return val.map(v => v.name || v.code || '').filter(Boolean).join(', ');
+        }
+        return String(val.length) + ' item(s)';
+    }
+    if (typeof val === 'object') return JSON.stringify(val);
+    return String(val);
+};
+
 const getStatusChangeNote = (status) => {
     const notes = {
         'draft': 'Dokumen disimpan sebagai draft',
@@ -18,12 +133,12 @@ export const getAllDocuments = async (user, filters) => {
 
     // Parse stringified JSON fields & attached distributions
     for (const doc of documents) {
-        if (typeof doc.content_data === 'string') {
+        if (typeof doc.content_data === 'string' && doc.content_data) {
             try { doc.content_data = JSON.parse(doc.content_data); } catch { doc.content_data = {}; }
-        }
-        if (typeof doc.history_log === 'string') {
+        } else if (!doc.content_data) { doc.content_data = {}; }
+        if (typeof doc.history_log === 'string' && doc.history_log) {
             try { doc.history_log = JSON.parse(doc.history_log); } catch { doc.history_log = []; }
-        }
+        } else if (!doc.history_log) { doc.history_log = []; }
 
         // Attach distributions
         const dists = await documentRepository.getDistributions(doc.id);
@@ -108,9 +223,13 @@ export const getDocumentById = async (id, user) => {
     // Get distributions early to check recipient status
     const distributions = await documentRepository.getDistributions(id);
 
-    // Parse JSON strings back to objects
-    if (typeof document.content_data === 'string') document.content_data = JSON.parse(document.content_data);
-    if (typeof document.history_log === 'string') document.history_log = JSON.parse(document.history_log);
+    // Parse JSON strings back to objects (with safety guards)
+    if (typeof document.content_data === 'string' && document.content_data) {
+        try { document.content_data = JSON.parse(document.content_data); } catch { document.content_data = {}; }
+    } else if (!document.content_data) { document.content_data = {}; }
+    if (typeof document.history_log === 'string' && document.history_log) {
+        try { document.history_log = JSON.parse(document.history_log); } catch { document.history_log = []; }
+    } else if (!document.history_log) { document.history_log = []; }
 
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
@@ -165,7 +284,9 @@ export const updateDocument = async (id, user, data) => {
     const document = await documentRepository.findById(id);
     if (!document) throw new NotFoundError('Document not found');
 
-    if (typeof document.content_data === 'string') document.content_data = JSON.parse(document.content_data);
+    if (typeof document.content_data === 'string' && document.content_data) {
+        try { document.content_data = JSON.parse(document.content_data); } catch { document.content_data = {}; }
+    } else if (!document.content_data) { document.content_data = {}; }
 
     // Prevent editing approved/final documents
     if (document.status === 'approved') {
@@ -242,6 +363,12 @@ export const updateDocument = async (id, user, data) => {
         }
     }
 
+    // Generate detailed field-level change summary
+    let fieldChangeSummary = null;
+    if (data.content_data) {
+        fieldChangeSummary = generateChangeSummary(document.content_data, data.content_data);
+    }
+
     // Determine action for logging
     let action = 'updated';
     let notes = 'Dokumen diperbarui';
@@ -287,6 +414,8 @@ export const updateDocument = async (id, user, data) => {
         }
     } else if (updateData.target_role) {
         notes = 'Tujuan dokumen diubah ke ' + (updateData.target_value || document.target_value);
+    } else if (fieldChangeSummary) {
+        notes = 'Konten dokumen diperbarui';
     }
 
     await documentRepository.createLog({
@@ -296,7 +425,7 @@ export const updateDocument = async (id, user, data) => {
         details: notes,
         old_status: (updateData.status && updateData.status !== oldStatus) ? oldStatus : null,
         new_status: (updateData.status && updateData.status !== oldStatus) ? updateData.status : null,
-        changes_summary: shouldVersion ? changeSummary : null,
+        changes_summary: fieldChangeSummary || (shouldVersion ? changeSummary : null),
         created_at: updateData.updated_at,
         updated_at: updateData.updated_at
     });

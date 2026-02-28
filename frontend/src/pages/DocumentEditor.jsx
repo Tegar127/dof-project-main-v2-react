@@ -231,15 +231,22 @@ function HistoryModal({ docId, onClose }) {
                                             <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider">{(log.action || '').replace('_', ' ')}</span>
                                             <span className="text-[10px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-full">{formatDateTime(log.created_at)}</span>
                                         </div>
-                                        <p className="text-sm text-slate-600 font-medium leading-relaxed">{log.notes}</p>
-                                        {log.changes && log.changes !== 'Penyimpanan otomatis.' && (
+                                        <p className="text-sm text-slate-600 font-medium leading-relaxed">{log.details}</p>
+                                        {log.old_status && log.new_status && (
+                                            <div className="flex items-center gap-2 my-2">
+                                                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-bold uppercase">{(log.old_status || '').replace('_', ' ')}</span>
+                                                <span className="text-slate-400 text-xs">&#8594;</span>
+                                                <span className="px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[10px] font-bold uppercase">{(log.new_status || '').replace('_', ' ')}</span>
+                                            </div>
+                                        )}
+                                        {log.changes_summary && (
                                             <div className="mt-3 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
-                                                <p className="text-xs text-blue-700 whitespace-pre-line italic">{log.changes}</p>
+                                                <p className="text-xs text-blue-700 whitespace-pre-line font-mono">{log.changes_summary}</p>
                                             </div>
                                         )}
                                         <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-50">
                                             <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600">{log.user_name?.charAt(0)}</div>
-                                            <span className="text-xs font-bold text-slate-500">{log.user_name}</span>
+                                            <span className="text-xs font-bold text-slate-500">{log.user_name || '-'}</span>
                                         </div>
                                     </div>
                                 </div>
