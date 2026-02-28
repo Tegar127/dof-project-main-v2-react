@@ -132,7 +132,7 @@ export const distributeDocumentSchema = z.object({
     body: z.object({
         recipients: z.array(z.object({
             type: z.enum(['all', 'group', 'user']),
-            id: z.number().nullable().optional()
+            id: z.union([z.string(), z.number()]).nullable().optional()
         })).min(1, 'Minimal satu penerima diperlukan'),
         notes: z.string().nullable().optional()
     })

@@ -6,9 +6,15 @@ import { UnauthorizedError } from '../utils/errors.js';
 export const login = async (email, password) => {
     const user = await userRepository.findByEmail(email);
 
-    // Note: Laravel uses standard bcrypt out of the box, we use bcryptjs
-    // They are compatible. We need to check password.
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    if (!user) {
+        throw new UnauthorizedError('Invalid credentials');
+    }
+
+    // Konversi hash PHP Laravel ($2y$) ke format Node.js bcryptjs ($2a$)
+    // Keduanya secara algoritma identik, bcryptjs hanya memvalidasi prefix secara ketat
+    const hashToCompare = user.password.replace(/^\$2y\$/, '$2a$');
+
+    if (!(await bcrypt.compare(password, hashToCompare))) {
         throw new UnauthorizedError('Invalid credentials');
     }
 

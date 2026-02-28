@@ -12,7 +12,6 @@ import api from '../utils/api';
 import NotaEditor from '../components/editor/NotaEditor';
 import SppdEditor from '../components/editor/SppdEditor';
 import PerjanjianEditor from '../components/editor/PerjanjianEditor';
-import html2pdf from 'html2pdf.js';
 import { Loader2 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -486,14 +485,7 @@ const DocumentEditor = () => {
 
     // ── handleDownload — matches downloadPDF() ───────────────
     const handleDownload = () => {
-        if (!printRef.current) return;
-        html2pdf().set({
-            margin: [15, 20, 15, 25],
-            filename: `${(doc?.title || 'dokumen').replace(/\s+/g, '_')}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        }).from(printRef.current).save();
+        window.print();
     };
 
     // ─────────────────────────────────────────────────────────
@@ -673,10 +665,10 @@ const DocumentEditor = () => {
                                     </div>
                                 )}
 
-                                {/* 4. Download PDF — blade line 617 — always shown */}
+                                {/* 4. Cetak PDF — always shown */}
                                 <button onClick={handleDownload} className="w-full bg-white text-slate-700 border-2 border-slate-100 py-4 rounded-2xl font-black uppercase tracking-widest flex justify-center items-center gap-3 hover:bg-slate-50 transition-all hover:border-slate-200 group">
-                                    <svg className="w-5 h-5 text-red-500 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                    <span>Download PDF</span>
+                                    <svg className="w-5 h-5 text-slate-600 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                                    <span>Cetak PDF</span>
                                 </button>
                             </div>
                         </div>

@@ -46,10 +46,8 @@ export const createUser = async (data) => {
 
     const { extra_groups, ...userData } = data;
 
-    // Hash password
+    // Hash password — created_at/updated_at handled by Prisma @default/@updatedAt
     userData.password = await bcrypt.hash(userData.password, 10);
-    userData.created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    userData.updated_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     const userId = await userRepository.create(userData);
 
@@ -79,8 +77,7 @@ export const updateUser = async (id, data) => {
         updateData.password = await bcrypt.hash(updateData.password, 10);
     }
 
-    updateData.updated_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
+    // updated_at handled automatically by Prisma @updatedAt
     await userRepository.update(id, updateData);
 
     // Sync groups only if extra_groups is present in request

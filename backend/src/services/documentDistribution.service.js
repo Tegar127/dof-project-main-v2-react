@@ -103,7 +103,7 @@ export const distributeDocument = async (documentId, user, recipients, notes) =>
         await distRepository.createDistribution({
             document_id: document.id,
             recipient_type: recipient.type,
-            recipient_id: recipient.id || null,
+            recipient_id: recipient.id ? String(recipient.id) : null,
             notes: notes || null
         });
         await notifyRecipients(document, recipient, user.id);

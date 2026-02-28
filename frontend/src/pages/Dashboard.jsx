@@ -207,7 +207,7 @@ const Dashboard = () => {
             'pending_review': 'Menunggu Review',
             'needs_revision': 'Perlu Revisi',
             'approved': 'Disetujui',
-            'sent': 'Dikirim',
+            'sent': 'Final (Terdistribusi)', // Changed from Dikirim
             'received': 'Diterima'
         };
         return statusMap[status] || status;
@@ -219,7 +219,7 @@ const Dashboard = () => {
             'pending_review': 'bg-amber-100 text-amber-600',
             'needs_revision': 'bg-red-100 text-red-600',
             'approved': 'bg-emerald-100 text-emerald-600',
-            'sent': 'bg-blue-100 text-blue-600',
+            'sent': 'bg-indigo-100 text-indigo-700 font-bold', // Highlighted Sent/Final
             'received': 'bg-violet-100 text-violet-600'
         };
         return classes[status] || 'bg-slate-100 text-slate-600';
@@ -228,7 +228,9 @@ const Dashboard = () => {
     const isDocEditable = (d, currentUser) => {
         if (!d || !currentUser) return false;
         if (currentUser.role === 'admin') return true;
-        if (d.status === 'approved') return false;
+
+        // Finalized / Approved docs are strictly uneditable by anyone except Admin
+        if (['approved', 'sent', 'received'].includes(d.status)) return false;
 
         const isAuthor = String(d.author_id) === String(currentUser.id);
         const isAuthorEditable = isAuthor && ['draft', 'needs_revision'].includes(d.status);
@@ -238,14 +240,9 @@ const Dashboard = () => {
         const isDispo = d.target_role === 'dispo' && currentUser.role === 'reviewer';
         const isTargetUser = d.target_role === 'user' && d.target_value === currentUser.email;
 
-        const isDist = d.distributions?.some?.(dist =>
-            dist.recipient_type === 'all' ||
-            (dist.recipient_type === 'user' && String(dist.recipient_id) === String(currentUser.id)) ||
-            (dist.recipient_type === 'group' && userGrps.includes(dist.recipient_id))
-        );
-
-        const isRecipient = isGroup || isDispo || isTargetUser || isDist;
-        const isRecipientEditable = isRecipient && ['sent', 'received', 'pending_review'].includes(d.status);
+        // Is recipient of the pre-approval forwarding loop
+        const isRecipient = isGroup || isDispo || isTargetUser;
+        const isRecipientEditable = isRecipient && ['pending_review'].includes(d.status);
 
         return isAuthorEditable || isRecipientEditable;
     };
