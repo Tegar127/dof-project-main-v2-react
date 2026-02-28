@@ -1,162 +1,337 @@
 import React from 'react';
-import { X } from 'lucide-react';
+
+function SectionHeading({ number, title }) {
+    return (
+        <div className="flex items-center gap-3">
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-1.5 h-4 bg-emerald-500 rounded-full inline-block shrink-0"></span>
+                {number}. {title}
+            </h3>
+            <div className="h-px bg-slate-100 flex-1"></div>
+        </div>
+    );
+}
 
 const SppdEditor = ({ formData, setFormData }) => {
+    const setField = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setField(name, value);
     };
 
-    // Mengingat (remember) with sub-items matching Laravel
-    const handleRememberChange = (index, value) => {
-        const remember = [...(formData.remember || [{ text: '', sub: [] }])];
-        if (typeof remember[index] === 'string') remember[index] = { text: remember[index], sub: [] };
-        remember[index] = { ...remember[index], text: value };
-        setFormData(prev => ({ ...prev, remember }));
+    // Mengingat (remember) with sub-items
+    const addRemember = () => setField('remember', [...(formData.remember || []), { text: '', sub: [] }]);
+    const removeRemember = (i) => {
+        const r = [...(formData.remember || [])]; r.splice(i, 1); setField('remember', r);
+    };
+    const changeRemember = (i, val) => {
+        const r = [...(formData.remember || [])];
+        r[i] = { ...(typeof r[i] === 'string' ? { text: r[i], sub: [] } : r[i]), text: val };
+        setField('remember', r);
+    };
+    const addRememberSub = (i) => {
+        const r = [...(formData.remember || [])];
+        r[i] = { ...(typeof r[i] === 'string' ? { text: r[i], sub: [] } : r[i]) };
+        r[i].sub = [...(r[i].sub || []), ''];
+        setField('remember', r);
+    };
+    const changeRememberSub = (pi, si, val) => {
+        const r = [...(formData.remember || [])];
+        const subs = [...(r[pi].sub || [])]; subs[si] = val;
+        r[pi] = { ...r[pi], sub: subs }; setField('remember', r);
+    };
+    const removeRememberSub = (pi, si) => {
+        const r = [...(formData.remember || [])];
+        const subs = [...(r[pi].sub || [])]; subs.splice(si, 1);
+        r[pi] = { ...r[pi], sub: subs }; setField('remember', r);
     };
 
-    const addRemember = () => {
-        const remember = [...(formData.remember || []), { text: '', sub: [] }];
-        setFormData(prev => ({ ...prev, remember }));
+    // CC (tembusan)
+    const addCc = () => setField('cc', [...(formData.cc || ['']), '']);
+    const removeCc = (i) => {
+        const c = [...(formData.cc || [])]; c.splice(i, 1); setField('cc', c);
+    };
+    const changeCc = (i, val) => {
+        const c = [...(formData.cc || [])]; c[i] = val; setField('cc', c);
     };
 
-    const removeRemember = (index) => {
-        const remember = [...(formData.remember || [])];
-        remember.splice(index, 1);
-        setFormData(prev => ({ ...prev, remember }));
-    };
-
-    const addRememberSub = (index) => {
-        const remember = [...(formData.remember || [])];
-        if (typeof remember[index] === 'string') remember[index] = { text: remember[index], sub: [] };
-        if (!remember[index].sub) remember[index].sub = [];
-        remember[index] = { ...remember[index], sub: [...remember[index].sub, ''] };
-        setFormData(prev => ({ ...prev, remember }));
-    };
-
-    const handleRememberSubChange = (parentIndex, subIndex, value) => {
-        const remember = [...(formData.remember || [])];
-        const subs = [...(remember[parentIndex].sub || [])];
-        subs[subIndex] = value;
-        remember[parentIndex] = { ...remember[parentIndex], sub: subs };
-        setFormData(prev => ({ ...prev, remember }));
-    };
-
-    const removeRememberSub = (parentIndex, subIndex) => {
-        const remember = [...(formData.remember || [])];
-        const subs = [...(remember[parentIndex].sub || [])];
-        subs.splice(subIndex, 1);
-        remember[parentIndex] = { ...remember[parentIndex], sub: subs };
-        setFormData(prev => ({ ...prev, remember }));
-    };
-
-    // CC (tembusan) array
-    const handleCcChange = (index, value) => {
-        const cc = [...(formData.cc || [''])];
-        cc[index] = value;
-        setFormData(prev => ({ ...prev, cc }));
-    };
-
-    const addCc = () => {
-        const cc = [...(formData.cc || ['']), ''];
-        setFormData(prev => ({ ...prev, cc }));
-    };
-
-    const removeCc = (index) => {
-        const cc = [...(formData.cc || [])];
-        cc.splice(index, 1);
-        setFormData(prev => ({ ...prev, cc }));
-    };
+    const rememberList = formData.remember || [{ text: '', sub: [] }];
+    const ccList = formData.cc || [''];
 
     return (
-        <div className="space-y-4">
-            <h2 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Input Data</h2>
+        <div className="space-y-10">
 
-            <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Nomor Dokumen</label>
-                <input type="text" name="docNumber" value={formData.docNumber || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" placeholder="SPPD-.../..." />
-            </div>
-
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Menimbang</label>
-                <textarea name="weigh" value={formData.weigh || ''} onChange={handleChange} rows="3" className="w-full p-2 border border-gray-300 rounded" placeholder="bahwa dalam rangka..."></textarea>
-            </div>
-
-            {/* Mengingat with sub-items */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Mengingat (List)</label>
-                <div className="space-y-2">
-                    {(formData.remember || [{ text: '', sub: [] }]).map((item, i) => {
-                        const remItem = typeof item === 'string' ? { text: item, sub: [] } : item;
-                        return (
-                            <div key={i} className="space-y-1">
-                                <div className="flex gap-2">
-                                    <input type="text" value={remItem.text} onChange={(e) => handleRememberChange(i, e.target.value)} className="flex-1 p-2 border border-gray-300 rounded" placeholder="Peraturan..." />
-                                    <button type="button" onClick={() => addRememberSub(i)} className="px-2 text-blue-500 hover:bg-blue-50 rounded text-xs" title="Tambah sub-poin">+sub</button>
-                                    {i > 0 && <button type="button" onClick={() => removeRemember(i)} className="px-2 text-red-500 hover:bg-red-50 rounded"><X size={16} /></button>}
-                                </div>
-                                {remItem.sub && remItem.sub.length > 0 && (
-                                    <div className="ml-6 space-y-1">
-                                        {remItem.sub.map((sub, si) => (
-                                            <div key={si} className="flex gap-2">
-                                                <span className="pt-2 text-xs text-gray-400">{String.fromCharCode(97 + si)}.</span>
-                                                <input type="text" value={sub} onChange={(e) => handleRememberSubChange(i, si, e.target.value)} className="flex-1 p-2 border border-gray-300 rounded text-sm" placeholder={`Sub-poin ${si + 1}...`} />
-                                                <button type="button" onClick={() => removeRememberSub(i, si)} className="px-2 text-red-400 hover:bg-red-50 rounded text-xs"><X size={14} /></button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
-                <button type="button" onClick={addRemember} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 mt-2">+ Tambah</button>
-            </div>
-
-            <hr className="border-gray-200" />
-            <input type="text" name="to" value={formData.to || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" placeholder="Kepada (Nama & Jabatan)" />
-
-            <div className="bg-gray-50 p-3 rounded border border-gray-200">
-                <label className="block text-sm font-bold text-gray-700 mb-2">Detail Perintah (Untuk)</label>
-
-                <label className="text-xs text-gray-500">Poin 1: Kegiatan</label>
-                <input type="text" name="task" value={formData.task || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded mb-2" placeholder="Melaksanakan kegiatan..." />
-
-                <label className="text-xs text-gray-500">Poin 2: Detail Perjalanan</label>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                    <input type="text" name="dest" value={formData.dest || ''} onChange={handleChange} className="p-2 border border-gray-300 rounded" placeholder="Tujuan (Denpasar)" />
-                    <input type="text" name="transport" value={formData.transport || ''} onChange={handleChange} className="p-2 border border-gray-300 rounded" placeholder="Pesawat Udara" />
-                </div>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                    <div><span className="text-xs">Berangkat</span><input type="date" name="dateGo" value={formData.dateGo || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" /></div>
-                    <div><span className="text-xs">Kembali</span><input type="date" name="dateBack" value={formData.dateBack || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" /></div>
-                </div>
-
-                <label className="text-xs text-gray-500">Poin 3, 4, 5 (Standar/Edit)</label>
-                <textarea name="funding" value={formData.funding || ''} onChange={handleChange} rows="2" className="w-full p-2 border border-gray-300 rounded mb-1" placeholder="Biaya dibebankan..."></textarea>
-                <textarea name="report" value={formData.report || ''} onChange={handleChange} rows="2" className="w-full p-2 border border-gray-300 rounded mb-1" placeholder="Melaporkan pelaksanaan..."></textarea>
-                <textarea name="close" value={formData.close || ''} onChange={handleChange} rows="1" className="w-full p-2 border border-gray-300 rounded" placeholder="Melaksanakan dengan tanggung jawab."></textarea>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-                <input type="text" name="loc" value={formData.loc || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" placeholder="Lokasi" />
-                <input type="date" name="signDate" value={formData.signDate || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" />
-            </div>
-            <input type="text" name="signPos" value={formData.signPos || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" placeholder="DIREKTUR UTAMA" />
-            <input type="text" name="signName" value={formData.signName || ''} onChange={handleChange} className="w-full p-2 border border-gray-300 rounded" placeholder="Nama Penandatangan" />
-
-            {/* Tembusan */}
-            <div>
-                <label className="block text-sm font-medium text-gray-700">Tembusan</label>
-                <div className="space-y-2">
-                    {(formData.cc || ['']).map((item, i) => (
-                        <div key={i} className="flex gap-2">
-                            <input type="text" value={item} onChange={(e) => handleCcChange(i, e.target.value)} className="flex-1 p-2 border border-gray-300 rounded" placeholder="Direksi..." />
-                            {i > 0 && <button type="button" onClick={() => removeCc(i)} className="px-2 text-red-500 hover:bg-red-50 rounded"><X size={16} /></button>}
+            {/* === 1. IDENTITAS & DASAR === */}
+            <div className="space-y-6">
+                <SectionHeading number="1" title="Identitas & Dasar" />
+                <div className="space-y-5">
+                    {/* Nomor Dokumen */}
+                    <div className="group">
+                        <label className="form-label-styled group-focus-within:text-emerald-500 transition-colors">Nomor Dokumen</label>
+                        <input
+                            type="text"
+                            name="docNumber"
+                            value={formData.docNumber || ''}
+                            onChange={handleChange}
+                            className="form-input-styled font-mono text-base"
+                            placeholder="SPPD-.../..."
+                        />
+                    </div>
+                    {/* Menimbang */}
+                    <div className="group">
+                        <label className="form-label-styled group-focus-within:text-emerald-500 transition-colors">Menimbang</label>
+                        <textarea
+                            name="weigh"
+                            value={formData.weigh || ''}
+                            onChange={handleChange}
+                            className="form-textarea-styled leading-relaxed"
+                            rows="3"
+                            placeholder="bahwa dalam rangka..."
+                        ></textarea>
+                    </div>
+                    {/* Mengingat */}
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <label className="form-label-styled">Mengingat</label>
+                            <button
+                                type="button"
+                                onClick={addRemember}
+                                className="text-[10px] text-emerald-600 font-black hover:underline tracking-tighter uppercase"
+                            >+ TAMBAH POIN</button>
                         </div>
-                    ))}
+                        <div className="space-y-3">
+                            {rememberList.map((item, i) => {
+                                const ri = typeof item === 'string' ? { text: item, sub: [] } : item;
+                                return (
+                                    <div key={i} className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-100 group/rem">
+                                        <div className="flex gap-3 items-center">
+                                            <div className="flex-1 relative">
+                                                <input
+                                                    type="text"
+                                                    value={ri.text}
+                                                    onChange={(e) => changeRemember(i, e.target.value)}
+                                                    className="form-input-styled text-sm py-2 bg-white"
+                                                    placeholder="Peraturan..."
+                                                />
+                                                <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-300 rounded-l-lg group-focus-within/rem:bg-emerald-500 transition-colors"></div>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => addRememberSub(i)}
+                                                    className="p-2 text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all"
+                                                    title="Tambah Sub-poin"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                    </svg>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeRemember(i)}
+                                                    className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {ri.sub && ri.sub.length > 0 && (
+                                            <div className="ml-4 space-y-1">
+                                                {ri.sub.map((sub, si) => (
+                                                    <div key={si} className="flex gap-2 items-center">
+                                                        <span className="text-xs text-slate-400 w-5">{String.fromCharCode(97 + si)}.</span>
+                                                        <input
+                                                            type="text"
+                                                            value={sub}
+                                                            onChange={(e) => changeRememberSub(i, si, e.target.value)}
+                                                            className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400 outline-none transition-all"
+                                                            placeholder={`Sub-poin ${si + 1}...`}
+                                                        />
+                                                        <button type="button" onClick={() => removeRememberSub(i, si)} className="p-1 text-slate-300 hover:text-red-500 transition-all">
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
-                <button type="button" onClick={addCc} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100 mt-2">+ Tambah</button>
+            </div>
+
+            {/* === 2. PERINTAH & PELAKSANAAN === */}
+            <div className="space-y-6 pt-4">
+                <SectionHeading number="2" title="Perintah & Pelaksanaan" />
+                <div className="space-y-5">
+                    {/* Kepada */}
+                    <div className="group">
+                        <label className="form-label-styled group-focus-within:text-emerald-500 transition-colors">Tujuan (Kepada)</label>
+                        <input
+                            type="text"
+                            name="to"
+                            value={formData.to || ''}
+                            onChange={handleChange}
+                            className="form-input-styled"
+                            placeholder="Nama & Jabatan"
+                        />
+                    </div>
+
+                    <div className="p-5 bg-slate-50 border border-slate-100 rounded-2xl space-y-5">
+                        <label className="block text-[10px] font-black text-slate-800 uppercase tracking-widest mb-2 border-b border-slate-200 pb-2">Detail Perintah (Untuk)</label>
+
+                        {/* Poin 1: Kegiatan */}
+                        <div className="space-y-2">
+                            <label className="form-label-styled">Kegiatan</label>
+                            <input
+                                type="text"
+                                name="task"
+                                value={formData.task || ''}
+                                onChange={handleChange}
+                                className="form-input-styled bg-white"
+                                placeholder="Melaksanakan kegiatan..."
+                            />
+                        </div>
+
+                        {/* Poin 2: Detail Perjalanan */}
+                        <div className="space-y-3">
+                            <label className="form-label-styled">Detail Perjalanan</label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <input type="text" name="dest" value={formData.dest || ''} onChange={handleChange} className="form-input-styled bg-white text-sm" placeholder="Tujuan (misal: Denpasar)" />
+                                <input type="text" name="transport" value={formData.transport || ''} onChange={handleChange} className="form-input-styled bg-white text-sm" placeholder="Transportasi (Pesawat)" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span className="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">Berangkat</span>
+                                    <input type="date" name="dateGo" value={formData.dateGo || ''} onChange={handleChange} className="form-input-styled bg-white text-sm" />
+                                </div>
+                                <div>
+                                    <span className="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">Kembali</span>
+                                    <input type="date" name="dateBack" value={formData.dateBack || ''} onChange={handleChange} className="form-input-styled bg-white text-sm" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Poin 3, 4, 5 */}
+                        <div className="space-y-2">
+                            <label className="form-label-styled">Ketentuan Tambahan</label>
+                            <textarea name="funding" value={formData.funding || ''} onChange={handleChange} rows="2" className="form-textarea-styled bg-white text-sm mb-2" placeholder="Biaya dibebankan..."></textarea>
+                            <textarea name="report" value={formData.report || ''} onChange={handleChange} rows="2" className="form-textarea-styled bg-white text-sm mb-2" placeholder="Melaporkan pelaksanaan..."></textarea>
+                            <textarea name="close" value={formData.close || ''} onChange={handleChange} rows="1" className="form-textarea-styled bg-white text-sm" placeholder="Melaksanakan dengan tanggung jawab."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* === 3. PENGESAHAN & PARAF === */}
+            <div className="space-y-8 pt-4">
+                <SectionHeading number="3" title="Pengesahan & Penandatanganan" />
+
+                {/* Location + Date */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="form-label-styled">Lokasi Dikeluarkan</label>
+                        <input
+                            type="text"
+                            name="loc"
+                            value={formData.loc || ''}
+                            onChange={handleChange}
+                            className="form-input-styled"
+                            placeholder="Jakarta"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <label className="form-label-styled">Tanggal</label>
+                        <input
+                            type="date"
+                            name="signDate"
+                            value={formData.signDate || ''}
+                            onChange={handleChange}
+                            className="form-input-styled"
+                        />
+                    </div>
+                </div>
+
+                {/* Jabatan Penandatangan */}
+                <div className="space-y-2">
+                    <label className="form-label-styled">Jabatan Penandatangan</label>
+                    <input
+                        type="text"
+                        name="signPos"
+                        value={formData.signPos || ''}
+                        onChange={handleChange}
+                        className="form-input-styled"
+                        placeholder="DIREKTUR UTAMA"
+                    />
+                </div>
+
+                {/* Nama Lengkap Penandatangan */}
+                <div className="space-y-2">
+                    <label className="form-label-styled">Nama Lengkap Penandatangan</label>
+                    <input
+                        type="text"
+                        name="signName"
+                        value={formData.signName || ''}
+                        onChange={handleChange}
+                        className="form-input-styled font-black text-lg"
+                        placeholder="Nama Lengkap..."
+                    />
+                </div>
+
+                {/* Main Signature placeholder */}
+                <div className="p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100 relative shadow-sm">
+                    <div className="flex justify-between items-center mb-4">
+                        <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Tanda Tangan Utama</label>
+                    </div>
+                    {!formData.signature ? (
+                        <div className="w-full py-6 border-2 border-dashed border-emerald-200 text-emerald-400 text-[10px] font-black rounded-xl bg-white text-center uppercase tracking-widest">
+                            (TTD akan diisi setelah approve)
+                        </div>
+                    ) : (
+                        <div className="h-32 flex items-center justify-center bg-white rounded-xl border border-emerald-100 shadow-inner">
+                            <img src={formData.signature} className="h-24 object-contain" alt="TTD" />
+                        </div>
+                    )}
+                </div>
+
+                {/* Tembusan */}
+                <div className="space-y-4 pt-4 border-t border-slate-100">
+                    <div className="flex justify-between items-center">
+                        <label className="form-label-styled">Tembusan (Opsional)</label>
+                        <button
+                            type="button"
+                            onClick={addCc}
+                            className="text-[10px] text-emerald-600 font-black hover:underline uppercase tracking-tighter"
+                        >+ TAMBAH TEMBUSAN</button>
+                    </div>
+                    <div className="space-y-2">
+                        {ccList.map((cc, i) => (
+                            <div key={i} className="flex gap-2 items-center group/cc">
+                                <div className="flex-1 relative">
+                                    <input
+                                        type="text"
+                                        value={cc}
+                                        onChange={(e) => changeCc(i, e.target.value)}
+                                        className="form-input-styled py-2 text-sm bg-white"
+                                        placeholder="Contoh: Direksi PT ASABRI"
+                                    />
+                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-300 rounded-l-lg group-focus-within/cc:bg-emerald-500 transition-colors"></div>
+                                </div>
+                                <button type="button" onClick={() => removeCc(i)} className="p-2 text-slate-300 hover:text-red-500 transition-all">
+                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
