@@ -1,0 +1,210 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// In Prisma v7, the datasource url is configured in prisma.config.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  name             String
+  email            String   @unique
+  email_verified_at String?
+  password         String
+  remember_token   String?
+  role             String   @default("user")
+  group_name       String?
+  position         String?
+  extra_groups     String?  // JSON array stored as text
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  // Relations
+  authoredDocuments       Document[]            @relation("DocumentAuthor")
+  documentVersions        DocumentVersion[]     @relation("VersionUpdater")
+  approvals               DocumentApproval[]    @relation("ApprovalApprover")
+  documentLogs            DocumentLog[]         @relation("LogUser")
+  readReceipts            DocumentReadReceipt[]
+  groupMemberships        GroupUser[]
+
+  @@map("users")
+}
+
+model Group {
+  id         Int       @id @default(autoincrement())
+  name       String
+  is_private Boolean   @default(false)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  // Relations
+  members GroupUser[]
+
+  @@map("groups")
+}
+
+model GroupUser {
+  group_id   Int
+  user_id    Int
+  is_admin   Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  group Group @relation(fields: [group_id], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@id([group_id, user_id])
+  @@map("group_user")
+}
+
+model Folder {
+  id         Int      @id @default(autoincrement())
+  name       String
+  parent_id  Int?
+  type       String?
+  metadata   String?  // JSON stored as text
+  order      Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Self-referential relation
+  parent   Folder?  @relation("FolderChildren", fields: [parent_id], references: [id], onDelete: Cascade)
+  children Folder[] @relation("FolderChildren")
+
+  documents Document[]
+
+  @@map("folders")
+}
+
+model Document {
+  id             Int      @id @default(autoincrement())
+  title          String
+  type           String
+  status         String   @default("draft")
+  author_id      Int?
+  author_name    String?
+  target_role    String?
+  target_value   String?
+  folder_id      Int?
+  version        String   @default("1.0")
+  approval_count Int      @default(0)
+  deadline       String?
+  content_data   String?  // JSON stored as text
+  history_log    String?  // JSON array stored as text
+  feedback       String?
+  forward_note   String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Relations
+  author        User?                  @relation("DocumentAuthor", fields: [author_id], references: [id], onDelete: SetNull)
+  folder        Folder?                @relation(fields: [folder_id], references: [id], onDelete: SetNull)
+  versions      DocumentVersion[]
+  approvals     DocumentApproval[]
+  logs          DocumentLog[]
+  readReceipts  DocumentReadReceipt[]
+  distributions DocumentDistribution[]
+
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id             Int      @id @default(autoincrement())
+  document_id    Int
+  version_number String
+  content_data   String?  // JSON stored as text
+  change_summary String?
+  updated_by     Int?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  document  Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  updater   User?    @relation("VersionUpdater", fields: [updated_by], references: [id], onDelete: SetNull)
+
+  @@map("document_versions")
+}
+
+model DocumentApproval {
+  id                Int      @id @default(autoincrement())
+  document_id       Int
+  sequence          Int
+  approver_position String?
+  approver_id       Int?
+  status            String   @default("pending")
+  notes             String?
+  approved_at       String?
+  approver_name     String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  approver User?    @relation("ApprovalApprover", fields: [approver_id], references: [id], onDelete: SetNull)
+
+  @@map("document_approvals")
+}
+
+model DocumentLog {
+  id              Int      @id @default(autoincrement())
+  document_id     Int
+  user_id         Int?
+  action          String
+  details         String?
+  old_status      String?
+  new_status      String?
+  changes_summary String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  user     User?    @relation("LogUser", fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("document_logs")
+}
+
+model DocumentReadReceipt {
+  id          Int      @id @default(autoincrement())
+  document_id Int
+  user_id     Int
+  read_at     String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([document_id, user_id])
+  @@map("document_read_receipts")
+}
+
+model DocumentDistribution {
+  id             Int      @id @default(autoincrement())
+  document_id    Int
+  recipient_type String
+  recipient_id   String?
+  notes          String?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+
+  @@map("document_distributions")
+}
+
+model Notification {
+  id              String   @id // UUID
+  type            String
+  notifiable_type String
+  notifiable_id   String
+  data            String   // JSON stored as text
+  read_at         String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("notifications")
+}

@@ -1,11 +1,10 @@
 import * as folderRepository from '../repositories/folder.repository.js';
-import * as documentRepository from '../repositories/document.repository.js'; // Will create soon
+import * as documentRepository from '../repositories/document.repository.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
-import db from '../config/database.js';
+import prisma from '../config/database.js';
 
 const syncDynamicFolders = async (user) => {
     const types = await folderRepository.getUniqueDocumentTypes(user.id);
-
     for (const type of types) {
         let folderName = type;
         switch (type) {
@@ -20,9 +19,7 @@ const syncDynamicFolders = async (user) => {
 
 export const getAllFolders = async (user) => {
     await syncDynamicFolders(user);
-
     const folders = await folderRepository.findAll();
-
     const foldersWithCount = await Promise.all(folders.map(async (folder) => {
         const documents_count = await folderRepository.getFolderDocumentsCount(folder.id);
         if (folder.metadata && typeof folder.metadata === 'string') {
@@ -30,14 +27,10 @@ export const getAllFolders = async (user) => {
         }
         return { ...folder, documents_count };
     }));
-
     return foldersWithCount;
 };
 
 export const createFolder = async (data) => {
-    data.created_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    data.updated_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
     const folderId = await folderRepository.create(data);
     return await folderRepository.findById(folderId);
 };
@@ -45,54 +38,37 @@ export const createFolder = async (data) => {
 export const getFolderById = async (id) => {
     const folder = await folderRepository.findById(id);
     if (!folder) throw new NotFoundError('Folder not found');
-
     if (folder.metadata && typeof folder.metadata === 'string') {
         folder.metadata = JSON.parse(folder.metadata);
     }
-
     const children = await folderRepository.getFolderChildren(id);
     const documents = await folderRepository.getFolderDocuments(id);
-
     let parent = null;
-    if (folder.parent_id) {
-        parent = await folderRepository.findById(folder.parent_id);
-    }
-
+    if (folder.parent_id) parent = await folderRepository.findById(folder.parent_id);
     return { ...folder, children, documents, parent };
 };
 
 export const updateFolder = async (id, data) => {
     const folder = await folderRepository.findById(id);
     if (!folder) throw new NotFoundError('Folder not found');
-
-    data.updated_at = new Date().toISOString().slice(0, 19).replace('T', ' ');
     await folderRepository.update(id, data);
-
     return await folderRepository.findById(id);
 };
 
 export const deleteFolder = async (id) => {
     const folder = await folderRepository.findById(id);
     if (!folder) throw new NotFoundError('Folder not found');
-
     const docCount = await folderRepository.getFolderDocumentsCount(id);
-    if (docCount > 0) {
-        throw new BadRequestError('Folder masih berisi dokumen. Pindahkan atau hapus dokumen terlebih dahulu.');
-    }
-
+    if (docCount > 0) throw new BadRequestError('Folder masih berisi dokumen. Pindahkan atau hapus dokumen terlebih dahulu.');
     const childCount = await folderRepository.getFolderChildrenCount(id);
-    if (childCount > 0) {
-        throw new BadRequestError('Folder masih memiliki subfolder. Hapus subfolder terlebih dahulu.');
-    }
-
+    if (childCount > 0) throw new BadRequestError('Folder masih memiliki subfolder. Hapus subfolder terlebih dahulu.');
     await folderRepository.destroy(id);
     return true;
 };
 
 export const moveDocument = async (documentId, folderId, user) => {
-    const document = await db('documents').where({ id: documentId }).first();
+    const document = await prisma.document.findUnique({ where: { id: Number(documentId) } });
     if (!document) throw new NotFoundError('Document not found');
-
     if (document.author_id !== user.id && user.role !== 'admin') {
         throw new ForbiddenError('Anda tidak memiliki izin untuk memindahkan dokumen ini.');
     }
@@ -105,16 +81,12 @@ export const moveDocument = async (documentId, folderId, user) => {
         if (folder) folderName = folder.name;
     }
 
-    // Need to log this action in document logs using the centralized document logs process
-    const actionLine = `Dokumen dipindahkan ke folder: ${folderName}`;
-    await db('document_logs').insert({
+    await documentRepository.createLog({
         document_id: documentId,
         user_id: user.id,
         action: 'updated',
-        details: actionLine,
-        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+        details: `Dokumen dipindahkan ke folder: ${folderName}`
     });
 
-    return await db('documents').where({ id: documentId }).first();
+    return await prisma.document.findUnique({ where: { id: Number(documentId) } });
 };

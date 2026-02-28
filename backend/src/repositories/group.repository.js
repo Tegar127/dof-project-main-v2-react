@@ -1,80 +1,72 @@
-import db from '../config/database.js';
+import prisma from '../config/database.js';
 
 export const findAll = async (user = null) => {
-    let query = db('groups');
+    const where = {};
 
     if (user && user.role !== 'admin') {
-        query = query.where(function () {
-            // User sees public groups
-            this.where('groups.is_private', false)
-                // OR groups where they are the primary member
-                .orWhere('groups.name', user.group_name)
-                // OR groups where they are a member via pivot
-                .orWhereExists(function () {
-                    this.select('id')
-                        .from('group_user')
-                        .whereRaw('group_user.group_id = groups.id')
-                        .andWhere('group_user.user_id', user.id);
-                });
-        });
+        where.OR = [
+            { is_private: false },
+            { name: user.group_name },
+            {
+                members: {
+                    some: { user_id: Number(user.id) }
+                }
+            }
+        ];
     }
 
-    return await query;
+    return await prisma.group.findMany({ where });
 };
 
 export const findById = async (id) => {
-    return await db('groups').where({ id }).first();
+    return await prisma.group.findUnique({ where: { id: Number(id) } });
 };
 
 export const findByName = async (name) => {
-    return await db('groups').where({ name }).first();
+    return await prisma.group.findFirst({ where: { name } });
 };
 
 export const create = async (data) => {
-    const [id] = await db('groups').insert(data);
-    return id;
+    const group = await prisma.group.create({ data });
+    return group.id;
 };
 
 export const update = async (id, data) => {
-    await db('groups').where({ id }).update(data);
+    await prisma.group.update({ where: { id: Number(id) }, data });
     return true;
 };
 
 export const destroy = async (id) => {
-    await db('groups').where({ id }).del();
+    await prisma.group.delete({ where: { id: Number(id) } });
     return true;
 };
 
 export const syncMembers = async (groupId, userIds) => {
-    await db.transaction(async (trx) => {
-        await trx('group_user').where({ group_id: groupId }).del();
+    await prisma.$transaction(async (tx) => {
+        await tx.groupUser.deleteMany({ where: { group_id: Number(groupId) } });
 
         if (userIds && userIds.length > 0) {
-            const insertions = userIds.map(userId => ({
-                group_id: groupId,
-                user_id: userId
-            }));
-            await trx('group_user').insert(insertions);
+            await tx.groupUser.createMany({
+                data: userIds.map((userId) => ({
+                    group_id: Number(groupId),
+                    user_id: Number(userId)
+                }))
+            });
         }
     });
 };
 
 export const getGroupMembers = async (groupId) => {
-    return await db('users')
-        .join('group_user', 'users.id', 'group_user.user_id')
-        .where('group_user.group_id', groupId)
-        .select('users.id', 'users.name', 'users.email', 'users.role');
+    const memberships = await prisma.groupUser.findMany({
+        where: { group_id: Number(groupId) },
+        include: {
+            user: { select: { id: true, name: true, email: true, role: true } }
+        }
+    });
+    return memberships.map((m) => m.user);
 };
 
-export const getGroupTotalWorkLogDuration = async (groupName) => {
-    try {
-        const result = await db('document_work_logs')
-            .where({ group_name: groupName })
-            .sum('duration_minutes as total')
-            .first();
-        return result?.total || 0;
-    } catch {
-        // Table may not exist yet
-        return 0;
-    }
+export const getGroupTotalWorkLogDuration = async (_groupName) => {
+    // Table document_work_logs not in current schema
+    return 0;
 };

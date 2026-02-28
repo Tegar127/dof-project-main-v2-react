@@ -1,24 +1,32 @@
-import db from '../config/database.js';
+import prisma from '../config/database.js';
 
 export const getDistributedDocuments = async (user) => {
-    let query = db('documents')
-        .whereIn('status', ['sent', 'received', 'approved'])
-        .leftJoin('users as author', 'documents.author_id', 'author.id')
-        .select('documents.*', 'author.name as author_name')
-        .orderBy('documents.updated_at', 'desc');
+    const where = {
+        status: { in: ['sent', 'received', 'approved'] }
+    };
 
     if (user.role !== 'admin') {
-        query.where('author_id', user.id);
+        where.author_id = Number(user.id);
     }
 
-    return await query;
+    return await prisma.document.findMany({
+        where,
+        include: { author: { select: { name: true } } },
+        orderBy: { updated_at: 'desc' }
+    });
 };
 
 export const getDocumentDistributions = async (documentId) => {
-    return await db('document_distributions')
-        .where('document_id', documentId);
+    return await prisma.documentDistribution.findMany({
+        where: { document_id: Number(documentId) }
+    });
 };
 
 export const createDistribution = async (distributionData) => {
-    await db('document_distributions').insert(distributionData);
+    await prisma.documentDistribution.create({
+        data: {
+            ...distributionData,
+            document_id: Number(distributionData.document_id)
+        }
+    });
 };

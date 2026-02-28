@@ -1,182 +1,233 @@
-import db from '../config/database.js';
+import prisma from '../config/database.js';
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const serializeJson = (value) => (value ? JSON.stringify(value) : null);
+
+// ─── Find All (complex filter, uses raw SQL for multi-condition OR) ───────────
 
 export const findAllForUser = async (user, filters = {}) => {
-    let query = db('documents')
-        .leftJoin('users as author', 'documents.author_id', 'author.id')
-        .select('documents.*', 'author.name as author_name')
-        .orderBy('documents.created_at', 'desc');
+    const conditions = [];
+    const values = [];
+    let idx = 1;
 
-    // Filter logic (port from Document::forUser scope)
-    if (user.role !== 'admin') {
-        query.where(function () {
-            this.where('documents.author_id', user.id)
-                .orWhere(function () {
-                    this.where('documents.target_role', 'user')
-                        .where('documents.target_value', user.email);
-                })
-                .orWhere(function () {
-                    this.where('documents.target_role', 'position')
-                        .where('documents.target_value', user.position);
-                })
-                .orWhereExists(function () {
-                    this.select('id').from('document_approvals')
-                        .whereRaw('document_approvals.document_id = documents.id')
-                        .andWhere(function () {
-                            this.where('document_approvals.approver_id', user.id)
-                                .orWhere('document_approvals.approver_position', user.position);
-                        });
-                });
-
-            // [NEW] Allow reviewers to see documents sent to disposition
-            if (user.role === 'reviewer') {
-                this.orWhere(function () {
-                    this.where('documents.target_role', 'dispo');
-                });
-            }
-
-            // Handling group target
-            const userGroup = user.group_name;
-            if (userGroup) {
-                this.orWhere(function () {
-                    this.where('documents.target_role', 'group')
-                        .where('documents.target_value', userGroup);
-                });
-            }
-
-            // [NEW] Check document_distributions table for multi-target distribute
-            this.orWhereExists(function () {
-                this.select('id').from('document_distributions as dd')
-                    .whereRaw('dd.document_id = documents.id')
-                    .andWhere(function () {
-                        // 1. All
-                        this.where('dd.recipient_type', 'all')
-                            // 2. Specific User by ID
-                            .orWhere(function () {
-                                this.where('dd.recipient_type', 'user')
-                                    .where('dd.recipient_id', String(user.id));
-                            })
-                            // 3. Specific Group by Name
-                            .orWhere(function () {
-                                this.where('dd.recipient_type', 'group')
-                                    .where('dd.recipient_id', userGroup);
-                            });
-                    });
-            });
-        });
+    if (user.role === 'reviewer') {
+        conditions.push(`(
+            d.author_id = $${idx}
+            OR d.target_role = 'dispo'
+            OR EXISTS (
+                SELECT 1 FROM document_approvals da
+                WHERE da.document_id = d.id
+                AND (da.approver_id = $${idx} OR da.approver_position = $${idx + 1})
+            )
+        )`);
+        values.push(user.id, user.position || '');
+        idx += 2;
+    } else if (user.role !== 'admin') {
+        const userGroup = user.group_name || '';
+        conditions.push(`(
+            d.author_id = $${idx}
+            OR (d.target_role = 'user'     AND d.target_value = $${idx + 1})
+            OR (d.target_role = 'position' AND d.target_value = $${idx + 2})
+            OR (d.target_role = 'group'    AND d.target_value = $${idx + 3})
+            OR EXISTS (
+                SELECT 1 FROM document_approvals da
+                WHERE da.document_id = d.id
+                AND (da.approver_id = $${idx} OR da.approver_position = $${idx + 2})
+            )
+            OR EXISTS (
+                SELECT 1 FROM document_distributions dd
+                WHERE dd.document_id = d.id
+                AND (
+                    dd.recipient_type = 'all'
+                    OR (dd.recipient_type = 'user'  AND dd.recipient_id = $${idx + 4})
+                    OR (dd.recipient_type = 'group' AND dd.recipient_id = $${idx + 3})
+                )
+            )
+        )`);
+        values.push(user.id, user.email || '', user.position || '', userGroup, String(user.id));
+        idx += 5;
     }
+    // admin: no WHERE filter → sees all documents
 
     if (filters.search) {
-        query.where(function () {
-            this.where('documents.title', 'like', `%${filters.search}%`)
-                .orWhere('documents.content_data', 'like', `%${filters.search}%`);
-        });
+        conditions.push(`(d.title ILIKE $${idx} OR d.content_data ILIKE $${idx})`);
+        values.push(`%${filters.search}%`);
+        idx++;
     }
-    if (filters.status) query.where('documents.status', filters.status);
-    if (filters.type) query.where('documents.type', filters.type);
-    if (filters.folder_id) query.where('documents.folder_id', filters.folder_id);
+    if (filters.status) {
+        conditions.push(`d.status = $${idx}`);
+        values.push(filters.status);
+        idx++;
+    }
+    if (filters.type) {
+        conditions.push(`d.type = $${idx}`);
+        values.push(filters.type);
+        idx++;
+    }
+    if (filters.folder_id) {
+        conditions.push(`d.folder_id = $${idx}`);
+        values.push(Number(filters.folder_id));
+        idx++;
+    }
 
-    return await query;
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const sql = `
+        SELECT d.*, u.name AS author_name
+        FROM documents d
+        LEFT JOIN users u ON d.author_id = u.id
+        ${whereClause}
+        ORDER BY d.created_at DESC
+    `;
+
+    return await prisma.$queryRawUnsafe(sql, ...values);
 };
 
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
+
 export const findById = async (id) => {
-    return await db('documents').where({ id }).first();
+    return await prisma.document.findUnique({ where: { id: Number(id) } });
 };
 
 export const create = async (data) => {
-    if (data.content_data) data.content_data = JSON.stringify(data.content_data);
-    if (data.history_log) data.history_log = JSON.stringify(data.history_log);
-
-    const [id] = await db('documents').insert(data);
-    return id;
+    const payload = {
+        ...data,
+        author_id: data.author_id ? Number(data.author_id) : null,
+        folder_id: data.folder_id ? Number(data.folder_id) : null,
+        content_data: serializeJson(data.content_data),
+        history_log: serializeJson(data.history_log)
+    };
+    const doc = await prisma.document.create({ data: payload });
+    return doc.id;
 };
 
 export const update = async (id, data) => {
-    if (data.content_data) data.content_data = JSON.stringify(data.content_data);
-    if (data.history_log) data.history_log = JSON.stringify(data.history_log);
+    const payload = { ...data };
+    if (data.content_data !== undefined) payload.content_data = serializeJson(data.content_data);
+    if (data.history_log !== undefined) payload.history_log = serializeJson(data.history_log);
+    if (data.author_id !== undefined) payload.author_id = data.author_id ? Number(data.author_id) : null;
+    if (data.folder_id !== undefined) payload.folder_id = data.folder_id ? Number(data.folder_id) : null;
 
-    await db('documents').where({ id }).update(data);
+    await prisma.document.update({ where: { id: Number(id) }, data: payload });
     return true;
 };
 
 export const destroy = async (id) => {
-    await db('documents').where({ id }).del();
+    await prisma.document.delete({ where: { id: Number(id) } });
     return true;
 };
 
+// ─── Logs ─────────────────────────────────────────────────────────────────────
+
 export const getLogs = async (documentId) => {
-    return await db('document_logs')
-        .leftJoin('users', 'document_logs.user_id', 'users.id')
-        .where('document_id', documentId)
-        .select('document_logs.*', 'users.name as user_name')
-        .orderBy('document_logs.created_at', 'desc')
-        .orderBy('document_logs.id', 'desc');
+    return await prisma.documentLog.findMany({
+        where: { document_id: Number(documentId) },
+        include: { user: { select: { name: true } } },
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }]
+    });
 };
 
 export const createLog = async (logData) => {
-    await db('document_logs').insert(logData);
+    await prisma.documentLog.create({
+        data: {
+            ...logData,
+            document_id: Number(logData.document_id),
+            user_id: logData.user_id ? Number(logData.user_id) : null
+        }
+    });
 };
 
+// ─── Approvals ────────────────────────────────────────────────────────────────
+
 export const getApprovals = async (documentId) => {
-    return await db('document_approvals')
-        .leftJoin('users as approver', 'document_approvals.approver_id', 'approver.id')
-        .where('document_id', documentId)
-        .select('document_approvals.*', 'approver.name as approver_name')
-        .orderBy('sequence', 'asc');
+    return await prisma.documentApproval.findMany({
+        where: { document_id: Number(documentId) },
+        include: { approver: { select: { name: true } } },
+        orderBy: { sequence: 'asc' }
+    });
 };
 
 export const createApproval = async (approvalData) => {
-    await db('document_approvals').insert(approvalData);
+    await prisma.documentApproval.create({
+        data: {
+            ...approvalData,
+            document_id: Number(approvalData.document_id),
+            approver_id: approvalData.approver_id ? Number(approvalData.approver_id) : null
+        }
+    });
 };
 
 export const updateApproval = async (id, approvalData) => {
-    await db('document_approvals').where({ id }).update(approvalData);
+    await prisma.documentApproval.update({
+        where: { id: Number(id) },
+        data: approvalData
+    });
 };
 
 export const clearApprovals = async (documentId) => {
-    await db('document_approvals').where({ document_id: documentId }).del();
+    await prisma.documentApproval.deleteMany({
+        where: { document_id: Number(documentId) }
+    });
 };
 
+// ─── Versions ─────────────────────────────────────────────────────────────────
+
 export const getVersions = async (documentId) => {
-    return await db('document_versions')
-        .leftJoin('users as updater', 'document_versions.updated_by', 'updater.id')
-        .where('document_id', documentId)
-        .select('document_versions.*', 'updater.name as updater_name')
-        .orderBy('document_versions.created_at', 'desc')
-        .orderBy('document_versions.id', 'desc');
+    return await prisma.documentVersion.findMany({
+        where: { document_id: Number(documentId) },
+        include: { updater: { select: { name: true } } },
+        orderBy: [{ created_at: 'desc' }, { id: 'desc' }]
+    });
 };
 
 export const createVersion = async (versionData) => {
-    if (versionData.content_data) versionData.content_data = JSON.stringify(versionData.content_data);
-    await db('document_versions').insert(versionData);
+    await prisma.documentVersion.create({
+        data: {
+            ...versionData,
+            document_id: Number(versionData.document_id),
+            updated_by: versionData.updated_by ? Number(versionData.updated_by) : null,
+            content_data: serializeJson(versionData.content_data)
+        }
+    });
 };
 
 export const getVersionById = async (versionId) => {
-    return await db('document_versions').where({ id: versionId }).first();
+    return await prisma.documentVersion.findUnique({ where: { id: Number(versionId) } });
 };
 
-export const markAsRead = async (documentId, userId) => {
-    const existing = await db('document_read_receipts')
-        .where({ document_id: documentId, user_id: userId })
-        .first();
+// ─── Read Receipts ────────────────────────────────────────────────────────────
 
-    if (!existing) {
-        await db('document_read_receipts').insert({
-            document_id: documentId,
-            user_id: userId,
-            read_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-            created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-            updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
-        });
-    }
+export const markAsRead = async (documentId, userId) => {
+    await prisma.documentReadReceipt.upsert({
+        where: {
+            document_id_user_id: {
+                document_id: Number(documentId),
+                user_id: Number(userId)
+            }
+        },
+        create: {
+            document_id: Number(documentId),
+            user_id: Number(userId),
+            read_at: new Date().toISOString()
+        },
+        update: {
+            read_at: new Date().toISOString()
+        }
+    });
 };
 
 export const getReadReceipts = async (documentId) => {
-    return await db('document_read_receipts')
-        .leftJoin('users', 'document_read_receipts.user_id', 'users.id')
-        .where('document_id', documentId)
-        .select('document_read_receipts.*', 'users.name as user_name');
+    return await prisma.documentReadReceipt.findMany({
+        where: { document_id: Number(documentId) },
+        include: { user: { select: { name: true } } }
+    });
 };
 
+// ─── Distributions ────────────────────────────────────────────────────────────
+
 export const getDistributions = async (documentId) => {
-    return await db('document_distributions').where('document_id', documentId);
+    return await prisma.documentDistribution.findMany({
+        where: { document_id: Number(documentId) }
+    });
 };

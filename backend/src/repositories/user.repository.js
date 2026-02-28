@@ -1,66 +1,58 @@
-import db from '../config/database.js';
+import prisma from '../config/database.js';
 
 export const findAll = async () => {
-    // Including total work logs and groups is complex in SQLite with Knex directly,
-    // We will do basic fetch first and map the extra groups and sum in service.
-    return await db('users').orderBy('created_at', 'desc');
+    return await prisma.user.findMany({
+        orderBy: { created_at: 'desc' }
+    });
 };
 
 export const findByEmail = async (email) => {
-    return await db('users').where({ email }).first();
+    return await prisma.user.findUnique({ where: { email } });
 };
 
 export const findById = async (id) => {
-    return await db('users').where({ id }).first();
+    return await prisma.user.findUnique({ where: { id: Number(id) } });
 };
 
 export const create = async (userData) => {
-    const [id] = await db('users').insert(userData);
-    return id;
+    const user = await prisma.user.create({ data: userData });
+    return user.id;
 };
 
 export const update = async (id, userData) => {
-    await db('users').where({ id }).update(userData);
+    await prisma.user.update({ where: { id: Number(id) }, data: userData });
     return true;
 };
 
 export const destroy = async (id) => {
-    await db('users').where({ id }).del();
+    await prisma.user.delete({ where: { id: Number(id) } });
     return true;
 };
 
 export const syncGroups = async (userId, groupIds) => {
-    await db.transaction(async (trx) => {
-        // Delete existing
-        await trx('group_user').where({ user_id: userId }).del();
+    await prisma.$transaction(async (tx) => {
+        await tx.groupUser.deleteMany({ where: { user_id: Number(userId) } });
 
         if (groupIds && groupIds.length > 0) {
-            // Insert new
-            const insertions = groupIds.map(groupId => ({
-                user_id: userId,
-                group_id: groupId
-            }));
-            await trx('group_user').insert(insertions);
+            await tx.groupUser.createMany({
+                data: groupIds.map((groupId) => ({
+                    user_id: Number(userId),
+                    group_id: Number(groupId)
+                }))
+            });
         }
     });
 };
 
 export const getUserGroups = async (userId) => {
-    return await db('groups')
-        .join('group_user', 'groups.id', 'group_user.group_id')
-        .where('group_user.user_id', userId)
-        .select('groups.*');
+    const memberships = await prisma.groupUser.findMany({
+        where: { user_id: Number(userId) },
+        include: { group: true }
+    });
+    return memberships.map((m) => m.group);
 };
 
-export const getUserTotalWorkLogDuration = async (userId) => {
-    try {
-        const result = await db('document_work_logs')
-            .where({ user_id: userId })
-            .sum('duration_minutes as total_duration')
-            .first();
-        return result?.total_duration || 0;
-    } catch {
-        // Table may not exist yet
-        return 0;
-    }
+export const getUserTotalWorkLogDuration = async (_userId) => {
+    // Table document_work_logs not in current schema
+    return 0;
 };

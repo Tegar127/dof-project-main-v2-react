@@ -1,71 +1,72 @@
-import db from '../config/database.js';
+import prisma from '../config/database.js';
 
 export const findAll = async () => {
-    return await db('folders').orderBy('name');
+    return await prisma.folder.findMany({ orderBy: { name: 'asc' } });
 };
 
 export const findById = async (id) => {
-    return await db('folders').where({ id }).first();
+    return await prisma.folder.findUnique({ where: { id: Number(id) } });
 };
 
 export const firstOrCreateCategory = async (name) => {
-    let folder = await db('folders').where({ name, type: 'category' }).first();
+    let folder = await prisma.folder.findFirst({ where: { name, type: 'category' } });
     if (!folder) {
-        const [id] = await db('folders').insert({ name, type: 'category' });
-        folder = { id, name, type: 'category' };
+        folder = await prisma.folder.create({ data: { name, type: 'category' } });
     }
     return folder;
 };
 
 export const create = async (data) => {
     const metadata = data.metadata ? JSON.stringify(data.metadata) : null;
-    const insertData = { ...data, metadata };
-    const [id] = await db('folders').insert(insertData);
-    return id;
+    const folder = await prisma.folder.create({ data: { ...data, metadata } });
+    return folder.id;
 };
 
 export const update = async (id, data) => {
-    const metadata = data.metadata ? JSON.stringify(data.metadata) : null;
     const updateData = { ...data };
-    if (data.metadata !== undefined) updateData.metadata = metadata;
-    await db('folders').where({ id }).update(updateData);
+    if (data.metadata !== undefined) {
+        updateData.metadata = data.metadata ? JSON.stringify(data.metadata) : null;
+    }
+    await prisma.folder.update({ where: { id: Number(id) }, data: updateData });
     return true;
 };
 
 export const destroy = async (id) => {
-    await db('folders').where({ id }).del();
+    await prisma.folder.delete({ where: { id: Number(id) } });
     return true;
 };
 
 export const getFolderDocumentsCount = async (id) => {
-    const result = await db('documents').where({ folder_id: id }).count('id as count').first();
-    return result.count;
+    return await prisma.document.count({ where: { folder_id: Number(id) } });
 };
 
 export const getFolderChildrenCount = async (id) => {
-    const result = await db('folders').where({ parent_id: id }).count('id as count').first();
-    return result.count;
+    return await prisma.folder.count({ where: { parent_id: Number(id) } });
 };
 
 export const getFolderDocuments = async (id) => {
-    return await db('documents')
-        .leftJoin('users as author', 'documents.author_id', 'author.id')
-        .select('documents.*', 'author.name as author_name')
-        .where('documents.folder_id', id);
+    return await prisma.document.findMany({
+        where: { folder_id: Number(id) },
+        include: { author: { select: { name: true } } }
+    });
 };
 
 export const getFolderChildren = async (id) => {
-    return await db('folders').where({ parent_id: id });
+    return await prisma.folder.findMany({ where: { parent_id: Number(id) } });
 };
 
-// Documents related
 export const moveDocument = async (documentId, folderId) => {
-    await db('documents').where({ id: documentId }).update({ folder_id: folderId });
+    await prisma.document.update({
+        where: { id: Number(documentId) },
+        data: { folder_id: folderId ? Number(folderId) : null }
+    });
 };
 
 export const getUniqueDocumentTypes = async (userId) => {
-    return await db('documents')
-        .where({ author_id: userId }) // the trait `forUser` originally limits by author or role. Simplified for sync.
-        .distinct('type')
-        .pluck('type');
+    const results = await prisma.document.findMany({
+        where: { author_id: Number(userId) },
+        select: { type: true },
+        distinct: ['type']
+    });
+    return results.map((r) => r.type);
 };

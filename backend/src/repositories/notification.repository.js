@@ -1,50 +1,54 @@
-import db from '../config/database.js';
+import prisma from '../config/database.js';
 
 export const getUserNotifications = async (userId, unreadOnly = false) => {
-    let query = db('notifications')
-        .where('notifiable_id', userId)
-        .where('notifiable_type', 'App\\Models\\User'); // Assuming mimicking Laravel polymorphism mostly for compatibility
+    const where = {
+        notifiable_id: String(userId),
+        notifiable_type: 'App\\Models\\User'
+    };
 
     if (unreadOnly) {
-        query.whereNull('read_at');
+        where.read_at = null;
     }
 
-    return await query.orderBy('created_at', 'desc');
+    return await prisma.notification.findMany({
+        where,
+        orderBy: { created_at: 'desc' }
+    });
 };
 
 export const getNotificationById = async (id, userId) => {
-    return await db('notifications')
-        .where({ id, notifiable_id: userId })
-        .first();
+    return await prisma.notification.findFirst({
+        where: { id, notifiable_id: String(userId) }
+    });
 };
 
 export const markAsRead = async (id, userId) => {
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    await db('notifications')
-        .where({ id, notifiable_id: userId })
-        .update({ read_at: now, updated_at: now });
+    const now = new Date().toISOString();
+    await prisma.notification.updateMany({
+        where: { id, notifiable_id: String(userId) },
+        data: { read_at: now }
+    });
 };
 
 export const markAllAsRead = async (userId) => {
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-    await db('notifications')
-        .where('notifiable_id', userId)
-        .whereNull('read_at')
-        .update({ read_at: now, updated_at: now });
+    const now = new Date().toISOString();
+    await prisma.notification.updateMany({
+        where: {
+            notifiable_id: String(userId),
+            read_at: null
+        },
+        data: { read_at: now }
+    });
 };
 
 export const createNotification = async (notificationData) => {
-    // Assuming type, notifiable_type, notifiable_id, data
     const insertData = {
-        id: crypto.randomUUID(), // Laravel notifications typically use UUIDs
+        id: crypto.randomUUID(),
         type: notificationData.type,
         notifiable_type: 'App\\Models\\User',
-        notifiable_id: notificationData.notifiable_id,
-        data: JSON.stringify(notificationData.data),
-        created_at: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        updated_at: new Date().toISOString().slice(0, 19).replace('T', ' ')
+        notifiable_id: String(notificationData.notifiable_id),
+        data: JSON.stringify(notificationData.data)
     };
 
-    await db('notifications').insert(insertData);
-    return insertData;
+    return await prisma.notification.create({ data: insertData });
 };

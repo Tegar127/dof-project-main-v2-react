@@ -1,24 +1,54 @@
-*.log
-.DS_Store
+# ─── Dependencies ────────────────────────────────────────────────────────────
+node_modules/
+vendor/
+
+# ─── Environment ─────────────────────────────────────────────────────────────
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
-Homestead.json
-Homestead.yaml
+.env.*
+!.env.example
+
+# ─── Build & Cache ───────────────────────────────────────────────────────────
+dist/
+build/
+.cache/
+.turbo/
+*.tsbuildinfo
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+
+# ─── Database ────────────────────────────────────────────────────────────────
+database/*.sqlite
+database/*.sqlite-journal
+# Backup boleh masuk ke git kalau mau, tapi biasanya tidak perlu:
+# database/*.sqlite.bak
+
+# ─── Prisma Generated ────────────────────────────────────────────────────────
+# Generated client tidak perlu di-commit (npx prisma generate saja)
+# backend/node_modules/@prisma/client sudah tercakup di node_modules/ di atas
+
+# ─── OS & Editors ────────────────────────────────────────────────────────────
+.DS_Store
 Thumbs.db
+.vscode/
+.idea/
+.fleet/
+.nova/
+.zed/
+*.swp
+*.swo
+
+# ─── Frontend (Vite) ─────────────────────────────────────────────────────────
+frontend/dist/
+frontend/.cache/
+
+# ─── Uploads / Storage ───────────────────────────────────────────────────────
+backend/storage/
+backend/uploads/
+public/storage/
+public/hot/
+public/build/
+storage/*.key
+storage/pail/
