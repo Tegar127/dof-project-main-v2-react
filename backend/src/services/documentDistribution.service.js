@@ -146,6 +146,15 @@ export const distributeDocument = async (documentId, user, recipients, notes) =>
             created_at: now,
             updated_at: now
         });
+
+        // Notify author that their document was distributed
+        if (document.author_id !== user.id) {
+            await notificationService.createNotification(document.author_id, 'App\\Notifications\\DocumentDistributedToAuthor', {
+                document_id: document.id,
+                title: document.title,
+                message: `Dokumen Anda "${document.title}" telah didistribusikan oleh Admin.`
+            });
+        }
     } else {
         await documentRepository.createLog({
             document_id: document.id,

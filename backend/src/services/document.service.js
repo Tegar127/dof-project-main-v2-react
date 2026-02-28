@@ -1,5 +1,7 @@
 import * as documentRepository from '../repositories/document.repository.js';
+import * as notificationService from './notification.service.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
+import db from '../config/database.js';
 
 // Human-readable labels for content_data fields
 const FIELD_LABELS = {
@@ -380,6 +382,19 @@ export const updateDocument = async (id, user, data) => {
                 action = 'sent';
                 notes = 'Dokumen dikirim ke ' + (updateData.target_value || document.target_value);
 
+                // Send notification to reviewers if sent to dispo
+                if (updateData.target_role === 'dispo') {
+                    db('users').where('role', 'reviewer').select('id').then(reviewers => {
+                        reviewers.forEach(reviewer => {
+                            notificationService.createNotification(reviewer.id, 'App\\Notifications\\DocumentNeedsReview', {
+                                document_id: id,
+                                title: document.title || data.title,
+                                message: `Dokumen baru "${document.title || data.title}" menunggu review Anda.`
+                            }).catch(console.error);
+                        });
+                    }).catch(console.error);
+                }
+
                 if (oldStatus === 'needs_revision') {
                     newVersion = incrementVersionString(newVersion, false);
                     await documentRepository.update(id, { version: newVersion });
@@ -411,6 +426,41 @@ export const updateDocument = async (id, user, data) => {
         } else {
             action = updateData.status === 'pending_review' ? 'sent' : updateData.status;
             notes = getStatusChangeNote(updateData.status);
+
+            // Send notification to reviewers if moved to pending review
+            if (updateData.status === 'pending_review' && updateData.target_role === 'dispo') {
+                db('users').where('role', 'reviewer').select('id').then(reviewers => {
+                    reviewers.forEach(reviewer => {
+                        notificationService.createNotification(reviewer.id, 'App\\Notifications\\DocumentNeedsReview', {
+                            document_id: id,
+                            title: document.title || data.title,
+                            message: `Dokumen baru "${document.title || data.title}" menunggu review Anda.`
+                        }).catch(console.error);
+                    });
+                }).catch(console.error);
+            }
+
+            // Send notification to Admins if document was just approved (ACC)
+            if (updateData.status === 'approved' && oldStatus !== 'approved') {
+                db('users').where('role', 'admin').select('id').then(admins => {
+                    admins.forEach(admin => {
+                        notificationService.createNotification(admin.id, 'App\\Notifications\\DocumentApproved', {
+                            document_id: id,
+                            title: document.title || data.title,
+                            message: `Dokumen "${document.title || data.title}" telah disetujui (ACC) dan siap didistribusikan.`
+                        }).catch(console.error);
+                    });
+                }).catch(console.error);
+            }
+
+            // Send notification to author if document needs revision
+            if (updateData.status === 'needs_revision' && oldStatus !== 'needs_revision') {
+                notificationService.createNotification(document.author_id, 'App\\Notifications\\DocumentNeedsRevision', {
+                    document_id: id,
+                    title: document.title || data.title,
+                    message: `Dokumen "${document.title || data.title}" dikembalikan untuk revisi.`
+                }).catch(console.error);
+            }
         }
     } else if (updateData.target_role) {
         notes = 'Tujuan dokumen diubah ke ' + (updateData.target_value || document.target_value);

@@ -27,6 +27,13 @@ export const findAllForUser = async (user, filters = {}) => {
                         });
                 });
 
+            // [NEW] Allow reviewers to see documents sent to disposition
+            if (user.role === 'reviewer') {
+                this.orWhere(function () {
+                    this.where('documents.target_role', 'dispo');
+                });
+            }
+
             // Handling group target
             const userGroup = user.group_name;
             if (userGroup) {

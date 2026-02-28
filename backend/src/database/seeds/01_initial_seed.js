@@ -67,6 +67,17 @@ export const seed = async function (knex) {
         updated_at: now
     });
 
+    const [reviewerId] = await knex('users').insert({
+        name: 'Reviewer Disposisi',
+        email: 'reviewer@dof.test',
+        password: passwordHash,
+        role: 'reviewer',
+        position: 'reviewer',
+        group_name: 'Sekretariat Perusahaan',
+        created_at: now,
+        updated_at: now
+    });
+
     const [kadivId] = await knex('users').insert({
         name: 'User Kadiv',
         email: 'kadiv@dof.test',
