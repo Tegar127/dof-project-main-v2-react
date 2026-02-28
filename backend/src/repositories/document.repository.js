@@ -29,13 +29,32 @@ export const findAllForUser = async (user, filters = {}) => {
 
             // Handling group target
             const userGroup = user.group_name;
-            // Ideally we would join with groups table, but simplest translation:
             if (userGroup) {
                 this.orWhere(function () {
                     this.where('documents.target_role', 'group')
                         .where('documents.target_value', userGroup);
                 });
             }
+
+            // [NEW] Check document_distributions table for multi-target distribute
+            this.orWhereExists(function () {
+                this.select('id').from('document_distributions as dd')
+                    .whereRaw('dd.document_id = documents.id')
+                    .andWhere(function () {
+                        // 1. All
+                        this.where('dd.recipient_type', 'all')
+                            // 2. Specific User by ID
+                            .orWhere(function () {
+                                this.where('dd.recipient_type', 'user')
+                                    .where('dd.recipient_id', String(user.id));
+                            })
+                            // 3. Specific Group by Name
+                            .orWhere(function () {
+                                this.where('dd.recipient_type', 'group')
+                                    .where('dd.recipient_id', userGroup);
+                            });
+                    });
+            });
         });
     }
 
@@ -149,4 +168,8 @@ export const getReadReceipts = async (documentId) => {
         .leftJoin('users', 'document_read_receipts.user_id', 'users.id')
         .where('document_id', documentId)
         .select('document_read_receipts.*', 'users.name as user_name');
+};
+
+export const getDistributions = async (documentId) => {
+    return await db('document_distributions').where('document_id', documentId);
 };

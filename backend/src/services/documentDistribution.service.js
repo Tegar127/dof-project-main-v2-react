@@ -106,12 +106,13 @@ const notifyRecipients = async (document, recipient, excludeUserId) => {
 };
 
 export const distributeDocument = async (documentId, user, recipients, notes) => {
+    const document = await documentRepository.findById(documentId);
+    if (!document) throw new NotFoundError('Document not found');
+
+    // Only Admin can distribute final approved documents
     if (user.role !== 'admin') {
         throw new ForbiddenError('Hanya Admin yang memiliki otorisasi untuk mendistribusikan dokumen final.');
     }
-
-    const document = await documentRepository.findById(documentId);
-    if (!document) throw new NotFoundError('Document not found');
 
     if (!['approved', 'sent', 'received'].includes(document.status)) {
         throw new BadRequestError('Hanya dokumen yang sudah disetujui yang dapat didistribusikan.');

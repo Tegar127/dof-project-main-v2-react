@@ -22,8 +22,6 @@ router.get('/:id', documentController.getDocument);
 router.put('/:id', documentController.updateDocument);
 router.delete('/:id', documentController.deleteDocument);
 
-
-
 // Document Sub-resources (Logs, Versions)
 router.get('/:id/logs', documentController.getLogs);
 router.get('/:id/versions', documentController.getVersions);

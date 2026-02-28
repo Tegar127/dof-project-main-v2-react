@@ -15,7 +15,8 @@ const getStatusChangeNote = (status) => {
 
 export const getAllDocuments = async (user, filters) => {
     const documents = await documentRepository.findAllForUser(user, filters);
-    // Parse stringified JSON fields
+
+    // Parse stringified JSON fields & attached distributions
     for (const doc of documents) {
         if (typeof doc.content_data === 'string') {
             try { doc.content_data = JSON.parse(doc.content_data); } catch { doc.content_data = {}; }
@@ -23,7 +24,12 @@ export const getAllDocuments = async (user, filters) => {
         if (typeof doc.history_log === 'string') {
             try { doc.history_log = JSON.parse(doc.history_log); } catch { doc.history_log = []; }
         }
+
+        // Attach distributions
+        const dists = await documentRepository.getDistributions(doc.id);
+        doc.distributions = dists;
     }
+
     return documents;
 };
 
@@ -99,6 +105,9 @@ export const getDocumentById = async (id, user) => {
     const document = await documentRepository.findById(id);
     if (!document) throw new NotFoundError('Document not found');
 
+    // Get distributions early to check recipient status
+    const distributions = await documentRepository.getDistributions(id);
+
     // Parse JSON strings back to objects
     if (typeof document.content_data === 'string') document.content_data = JSON.parse(document.content_data);
     if (typeof document.history_log === 'string') document.history_log = JSON.parse(document.history_log);
@@ -108,32 +117,37 @@ export const getDocumentById = async (id, user) => {
     // Only mark user as read, avoid group check logic repetition or implement correctly
     await documentRepository.markAsRead(id, user.id);
 
-    // If opened by receiver group member and status is 'sent', update to 'received'
-    if (document.status === 'sent' && document.target_role === 'group') {
-        const userGroups = [user.group_name]; // Basic group validation
-        if (userGroups.includes(document.target_value)) {
-            const oldStatus = document.status;
-            await documentRepository.update(id, { status: 'received', updated_at: now });
-            document.status = 'received';
+    // Check if user is a valid recipient through distributions
+    const userGroups = [user.group_name, ...(user.groups || []).map(g => typeof g === 'object' ? g.name : g)].filter(Boolean);
+    const isRecipient = distributions.some(d =>
+        d.recipient_type === 'all' ||
+        (d.recipient_type === 'user' && String(d.recipient_id) === String(user.id)) ||
+        (d.recipient_type === 'group' && userGroups.includes(d.recipient_id))
+    );
 
-            await documentRepository.createLog({
-                document_id: id,
-                user_id: user.id,
-                action: 'received',
-                details: 'Dokumen diterima oleh ' + document.target_value,
-                old_status: oldStatus,
-                new_status: 'received',
-                created_at: now,
-                updated_at: now
-            });
-        }
+    // If opened by receiver and status is 'sent', update to 'received'
+    if (document.status === 'sent' && (isRecipient || (document.target_role === 'group' && userGroups.includes(document.target_value)))) {
+        const oldStatus = document.status;
+        await documentRepository.update(id, { status: 'received', updated_at: now });
+        document.status = 'received';
+
+        await documentRepository.createLog({
+            document_id: id,
+            user_id: user.id,
+            action: 'received',
+            details: 'Dokumen diterima dan dibaca.',
+            old_status: oldStatus,
+            new_status: 'received',
+            created_at: now,
+            updated_at: now
+        });
     }
 
     const logs = await documentRepository.getLogs(id);
     const approvals = await documentRepository.getApprovals(id);
     const readReceipts = await documentRepository.getReadReceipts(id);
 
-    return { ...document, logs, approvals, read_receipts: readReceipts };
+    return { ...document, logs, approvals, read_receipts: readReceipts, distributions };
 };
 
 const incrementVersionString = (versionStr, major = false) => {
@@ -153,11 +167,12 @@ export const updateDocument = async (id, user, data) => {
 
     if (typeof document.content_data === 'string') document.content_data = JSON.parse(document.content_data);
 
-    // Prevent editing final documents
-    const isFinal = ['approved', 'sent', 'received'].includes(document.status);
-    if (isFinal && !data.status && !data.target) {
-        if (data.content_data) {
-            throw new BadRequestError('Dokumen final tidak dapat diubah kontennya.');
+    // Prevent editing approved/final documents
+    if (document.status === 'approved') {
+        const allowedUpdates = Object.keys(data).filter(k => !['status', 'target'].includes(k));
+        // If they are trying to update anything other than status/target (e.g. content) on an approved doc
+        if (allowedUpdates.length > 0 && data.content_data) {
+            throw new BadRequestError('Dokumen yang sudah disetujui (Final) tidak dapat diubah kontennya.');
         }
     }
 

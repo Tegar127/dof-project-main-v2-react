@@ -204,6 +204,32 @@ const Dashboard = () => {
         return classes[status] || 'bg-slate-100 text-slate-600';
     };
 
+    const isDocEditable = (d, currentUser) => {
+        if (!d || !currentUser) return false;
+        if (currentUser.role === 'admin') return true;
+        if (d.status === 'approved') return false;
+
+        if (d.author_id === currentUser.id) {
+            return d.status === 'draft' || d.status === 'needs_revision';
+        }
+
+        const userGrps = [currentUser.group_name, ...(currentUser.groups || []).map(g => typeof g === 'object' ? g.name : g)].filter(Boolean);
+        const isGroup = d.target_role === 'group' && userGrps.includes(d.target_value);
+        const isDispo = d.target_role === 'dispo' && currentUser.role === 'reviewer';
+
+        // Multi-distribution check if backend returns distributions (might not be in standard GET /documents, but good to have)
+        const isDist = d.distributions?.some?.(dist =>
+            dist.recipient_type === 'all' ||
+            (dist.recipient_type === 'user' && String(dist.recipient_id) === String(currentUser.id)) ||
+            (dist.recipient_type === 'group' && userGrps.includes(dist.recipient_id))
+        );
+
+        if (isGroup || isDispo || isDist) {
+            return ['sent', 'received', 'pending_review'].includes(d.status);
+        }
+        return false;
+    };
+
     return (
         <div className="min-h-screen bg-slate-50/50 font-sans text-slate-900">
 
@@ -522,18 +548,19 @@ const Dashboard = () => {
                                                         </button>
                                                     )}
 
+                                                    {isDocEditable(doc, user) && (
+                                                        <Link to={`/documents/${doc.id}/edit`} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-all shadow-sm">
+                                                            Edit
+                                                        </Link>
+                                                    )}
+
                                                     {user.id === doc.author_id && doc.status !== 'approved' && (
-                                                        <>
-                                                            <Link to={`/documents/${doc.id}/edit`} className="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-all shadow-sm">
-                                                                Edit
-                                                            </Link>
-                                                            <button
-                                                                onClick={() => { setDocToDelete(doc); setShowDeleteModal(true); }}
-                                                                className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-red-500 hover:text-red-700 hover:bg-red-50 hover:border-red-200 shadow-sm transition-all"
-                                                            >
-                                                                <Trash2 size={16} />
-                                                            </button>
-                                                        </>
+                                                        <button
+                                                            onClick={() => { setDocToDelete(doc); setShowDeleteModal(true); }}
+                                                            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-red-500 hover:text-red-700 hover:bg-red-50 hover:border-red-200 shadow-sm transition-all"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>

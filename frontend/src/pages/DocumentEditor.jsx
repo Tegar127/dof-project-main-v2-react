@@ -316,10 +316,18 @@ const DocumentEditor = () => {
 
         // Recipient/Reviewer: can edit when document is sent to them
         const userGroups = [user.group_name, ...(user.groups || []).map(g => typeof g === 'object' ? g.name : g)].filter(Boolean);
+
         const isTargetGroup = d.target_role === 'group' && userGroups.includes(d.target_value);
         const isTargetDispo = d.target_role === 'dispo' && user.role === 'reviewer';
 
-        if (isTargetGroup || isTargetDispo) {
+        // Multi-distribution check
+        const isDistributedRecipient = d.distributions && d.distributions.some(dist =>
+            dist.recipient_type === 'all' ||
+            (dist.recipient_type === 'user' && String(dist.recipient_id) === String(user.id)) ||
+            (dist.recipient_type === 'group' && userGroups.includes(dist.recipient_id))
+        );
+
+        if (isTargetGroup || isTargetDispo || isDistributedRecipient) {
             return ['sent', 'received', 'pending_review'].includes(status);
         }
 
@@ -429,7 +437,20 @@ const DocumentEditor = () => {
     const updateStatus = async (newStatus) => {
         setSaving(true);
         try {
-            await api.put(`/documents/${id}`, { status: newStatus, feedback });
+            // Check if there is an active approval workflow for this user
+            const myApproval = doc.approvals?.find(a => a.status === 'pending' && (!a.approver_id || a.approver_id === user.id || a.approver_position === user.position));
+
+            if (myApproval) {
+                if (newStatus === 'approved') {
+                    await api.post(`/documents/${id}/approvals/${myApproval.id}/approve`, { notes: feedback });
+                } else {
+                    await api.post(`/documents/${id}/approvals/${myApproval.id}/reject`, { notes: feedback });
+                }
+            } else {
+                // Fallback to direct status update if no approval structure exists for this document
+                await api.put(`/documents/${id}`, { status: newStatus, feedback });
+            }
+
             const res = await api.get(`/documents/${id}`);
             setDoc(res.data.data);
             setSuccessMsg(newStatus === 'approved' ? 'Dokumen berhasil disetujui!' : 'Dokumen dikembalikan untuk revisi.');
