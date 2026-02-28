@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import SignatureModal from './SignatureModal';
 
 function SectionHeading({ number, title }) {
     return (
@@ -13,6 +14,7 @@ function SectionHeading({ number, title }) {
 }
 
 const PerjanjianEditor = ({ formData, setFormData }) => {
+    const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' });
     const setField = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -240,14 +242,52 @@ const PerjanjianEditor = ({ formData, setFormData }) => {
                                         />
                                     </div>
                                 </div>
-                                <div className="w-full py-2 border-2 border-dashed border-slate-200 text-slate-400 text-[9px] font-black rounded-lg bg-white text-center uppercase tracking-widest">
-                                    KOLOM PARAF TERCETAK
+                                <div className="w-full p-2 border-2 border-dashed border-slate-200 rounded-lg bg-white relative group/ptd">
+                                    {!item.signature ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSigModal({ isOpen: true, target: `paraf-${i}`, title: `Paraf ${item.title || 'Tambahan'}` })}
+                                            className="w-full py-2 text-slate-400 hover:text-amber-600 text-[9px] font-black text-center uppercase tracking-widest transition-colors"
+                                        >
+                                            + TTD / PARAF
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <div className="h-12 flex items-center justify-center">
+                                                <img src={item.signature} className="h-10 object-contain" alt="Paraf" />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const p = [...(formData.paraf || [])];
+                                                    p[i] = { ...p[i], signature: '' };
+                                                    setField('paraf', p);
+                                                }}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white w-4 h-4 text-xs rounded-full flex items-center justify-center opacity-0 group-hover/ptd:opacity-100 transition-opacity shadow-md"
+                                            >×</button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+
+            {/* Signature Modal */}
+            <SignatureModal
+                isOpen={sigModal.isOpen}
+                title={sigModal.title}
+                onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
+                onSave={(dataUrl) => {
+                    if (sigModal.target && sigModal.target.startsWith('paraf-')) {
+                        const idx = parseInt(sigModal.target.split('-')[1]);
+                        const p = [...(formData.paraf || [])];
+                        p[idx] = { ...p[idx], signature: dataUrl };
+                        setField('paraf', p);
+                    }
+                }}
+            />
         </div>
     );
 };
@@ -326,9 +366,16 @@ const Preview = ({ formData }) => {
                                     <td key={i} className="cell-width uppercase">{p.title || '...'}</td>
                                 ))}
                             </tr>
-                            <tr className="row-signature">
+                            <tr className="row-signature text-center align-bottom">
                                 {formData.paraf.map((p, i) => (
-                                    <td key={i} className="cell-width font-bold uppercase underline">{p.name || '...'}</td>
+                                    <td key={i} className="cell-width pt-6 pb-2">
+                                        {p.signature ? (
+                                            <img src={p.signature} className="h-24 object-contain mx-auto" alt="TTD" />
+                                        ) : (
+                                            <div className="h-24 w-full flex items-center justify-center text-xs text-gray-400 italic">...</div>
+                                        )}
+                                        <div className="font-bold uppercase underline mt-2">{p.name || '...'}</div>
+                                    </td>
                                 ))}
                             </tr>
                         </tbody>

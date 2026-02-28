@@ -1,5 +1,3 @@
-import React from 'react';
-
 function SectionHeading({ number, title }) {
     return (
         <div className="flex items-center gap-3">
@@ -13,6 +11,7 @@ function SectionHeading({ number, title }) {
 }
 
 const SppdEditor = ({ formData, setFormData }) => {
+    const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' });
     const setField = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -288,14 +287,28 @@ const SppdEditor = ({ formData, setFormData }) => {
                 <div className="p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100 relative shadow-sm">
                     <div className="flex justify-between items-center mb-4">
                         <label className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Tanda Tangan Utama</label>
+                        <button
+                            type="button"
+                            onClick={() => setSigModal({ isOpen: true, target: 'main', title: 'Tanda Tangan Utama' })}
+                            className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black hover:bg-emerald-600 hover:text-white transition-all uppercase tracking-widest"
+                        >
+                            + ISI TTD
+                        </button>
                     </div>
                     {!formData.signature ? (
                         <div className="w-full py-6 border-2 border-dashed border-emerald-200 text-emerald-400 text-[10px] font-black rounded-xl bg-white text-center uppercase tracking-widest">
-                            (TTD akan diisi setelah approve)
+                            (Belum ada tanda tangan)
                         </div>
                     ) : (
-                        <div className="h-32 flex items-center justify-center bg-white rounded-xl border border-emerald-100 shadow-inner">
-                            <img src={formData.signature} className="h-24 object-contain" alt="TTD" />
+                        <div className="relative group/ttd">
+                            <div className="h-32 flex items-center justify-center bg-white rounded-xl border border-emerald-100 shadow-inner">
+                                <img src={formData.signature} className="h-24 object-contain" alt="TTD" />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setField('signature', '')}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover/ttd:opacity-100 transition-opacity shadow-md"
+                            >×</button>
                         </div>
                     )}
                 </div>
@@ -333,6 +346,18 @@ const SppdEditor = ({ formData, setFormData }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Signature Modal */}
+            <SignatureModal
+                isOpen={sigModal.isOpen}
+                title={sigModal.title}
+                onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
+                onSave={(dataUrl) => {
+                    if (sigModal.target === 'main') {
+                        setField('signature', dataUrl);
+                    }
+                }}
+            />
         </div>
     );
 };
@@ -437,12 +462,15 @@ const Preview = ({ formData }) => {
             </table>
 
             {/* Signature */}
-            <div className="signature-section">
-                <p className="mb-1">Dikeluarkan di {formData.loc || '...'}</p>
-                <p className="mb-1">pada tanggal {formatDate(formData.signDate)}</p>
+            <div className="signature-section" style={{ float: 'right', width: '300px', textAlign: 'center' }}>
+                <p className="mb-0 text-left">Dikeluarkan di {formData.loc || '...'}</p>
+                <p className="mb-4 text-left border-b border-black pb-1">pada tanggal {formatDate(formData.signDate)}</p>
                 <p className="font-bold uppercase mb-0">DIREKSI,</p>
-                <p className="font-bold uppercase mb-16">{formData.signPos || '...'}</p>
-                <p className="font-bold uppercase underline">{formData.signName || '...'}</p>
+                <p className="font-bold uppercase mb-0">{formData.signPos || '...'}</p>
+                <div className="h-24 w-full flex items-center justify-center my-2">
+                    {formData.signature && <img src={formData.signature} className="max-h-24 object-contain" alt="TTD" />}
+                </div>
+                <p className="font-bold uppercase underline mb-0">{formData.signName || '...'}</p>
             </div>
             <div style={{ clear: 'both' }}></div>
 

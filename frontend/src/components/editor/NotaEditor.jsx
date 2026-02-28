@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { CKEditor } from '@ckeditor/ckeditor5-react';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import SignatureModal from './SignatureModal';
 
 // ===========================================================
 // NOTA EDITOR — matches editor/index.blade.php sidebar
@@ -21,6 +22,7 @@ function SectionHeading({ number, title }) {
 }
 
 const NotaEditor = ({ formData, setFormData }) => {
+    const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' });
     const setField = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 
     // ---- Basis  ----
@@ -383,14 +385,28 @@ const NotaEditor = ({ formData, setFormData }) => {
                 <div className="p-6 bg-indigo-50/50 rounded-2xl border border-indigo-100 relative shadow-sm">
                     <div className="flex justify-between items-center mb-4">
                         <label className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Tanda Tangan Utama</label>
+                        <button
+                            type="button"
+                            onClick={() => setSigModal({ isOpen: true, target: 'main', title: 'Tanda Tangan Utama' })}
+                            className="px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-[9px] font-black hover:bg-indigo-600 hover:text-white transition-all uppercase tracking-widest"
+                        >
+                            + ISI TTD
+                        </button>
                     </div>
                     {!formData.signature ? (
                         <div className="w-full py-6 border-2 border-dashed border-indigo-200 text-indigo-400 text-[10px] font-black rounded-xl bg-white text-center uppercase tracking-widest">
-                            (TTD akan diisi setelah approve)
+                            (Belum ada tanda tangan)
                         </div>
                     ) : (
-                        <div className="h-32 flex items-center justify-center bg-white rounded-xl border border-indigo-100 shadow-inner">
-                            <img src={formData.signature} className="h-24 object-contain" alt="TTD" />
+                        <div className="relative group/ttd">
+                            <div className="h-32 flex items-center justify-center bg-white rounded-xl border border-indigo-100 shadow-inner">
+                                <img src={formData.signature} className="h-24 object-contain" alt="TTD" />
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setField('signature', '')}
+                                className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover/ttd:opacity-100 transition-opacity shadow-md"
+                            >×</button>
                         </div>
                     )}
                 </div>
@@ -438,14 +454,54 @@ const NotaEditor = ({ formData, setFormData }) => {
                                         className="form-input-styled bg-white border-slate-200 py-1 text-[9px] font-black"
                                     />
                                 </div>
-                                <div className="w-full py-2 border-2 border-dashed border-slate-200 text-slate-400 text-[9px] font-black rounded-lg bg-white text-center uppercase tracking-widest">
-                                    ISI PARAF
+                                <div className="w-full p-2 border-2 border-dashed border-slate-200 rounded-lg bg-white relative group/ptd">
+                                    {!item.signature ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSigModal({ isOpen: true, target: `paraf-${i}`, title: `Paraf ${item.name || 'Tambahan'}` })}
+                                            className="w-full py-2 text-slate-400 hover:text-indigo-600 text-[9px] font-black text-center uppercase tracking-widest transition-colors"
+                                        >
+                                            + ISI PARAF
+                                        </button>
+                                    ) : (
+                                        <>
+                                            <div className="h-12 flex items-center justify-center">
+                                                <img src={item.signature} className="h-10 object-contain" alt="Paraf" />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const p = [...(formData.paraf || [])];
+                                                    p[i] = { ...p[i], signature: '' };
+                                                    setField('paraf', p);
+                                                }}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white w-4 h-4 text-xs rounded-full flex items-center justify-center opacity-0 group-hover/ptd:opacity-100 transition-opacity shadow-md"
+                                            >×</button>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
             </div>
+
+            {/* Signature Modal */}
+            <SignatureModal
+                isOpen={sigModal.isOpen}
+                title={sigModal.title}
+                onClose={() => setSigModal({ isOpen: false, target: null, title: '' })}
+                onSave={(dataUrl) => {
+                    if (sigModal.target === 'main') {
+                        setField('signature', dataUrl);
+                    } else if (sigModal.target && sigModal.target.startsWith('paraf-')) {
+                        const idx = parseInt(sigModal.target.split('-')[1]);
+                        const p = [...(formData.paraf || [])];
+                        p[idx] = { ...p[idx], signature: dataUrl };
+                        setField('paraf', p);
+                    }
+                }}
+            />
         </div>
     );
 };
