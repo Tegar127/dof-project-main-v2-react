@@ -309,16 +309,16 @@ const DocumentEditor = () => {
         const status = d.status;
         if (status === 'approved') return false;
 
-        // Author: draft/needs_revision only
-        if (d.author_id && d.author_id === user.id) {
-            return status === 'draft' || status === 'needs_revision';
-        }
+        // Author: draft/needs_revision only (if they are NOT currently the recipient)
+        const isAuthor = String(d.author_id) === String(user.id);
+        const isAuthorEditable = isAuthor && ['draft', 'needs_revision'].includes(status);
 
         // Recipient/Reviewer: can edit when document is sent to them
         const userGroups = [user.group_name, ...(user.groups || []).map(g => typeof g === 'object' ? g.name : g)].filter(Boolean);
 
         const isTargetGroup = d.target_role === 'group' && userGroups.includes(d.target_value);
         const isTargetDispo = d.target_role === 'dispo' && user.role === 'reviewer';
+        const isTargetUser = d.target_role === 'user' && d.target_value === user.email;
 
         // Multi-distribution check
         const isDistributedRecipient = d.distributions && d.distributions.some(dist =>
@@ -327,11 +327,10 @@ const DocumentEditor = () => {
             (dist.recipient_type === 'group' && userGroups.includes(dist.recipient_id))
         );
 
-        if (isTargetGroup || isTargetDispo || isDistributedRecipient) {
-            return ['sent', 'received', 'pending_review'].includes(status);
-        }
+        const isRecipient = isTargetGroup || isTargetDispo || isTargetUser || isDistributedRecipient;
+        const isRecipientEditable = isRecipient && ['sent', 'received', 'pending_review'].includes(status);
 
-        return false;
+        return isAuthorEditable || isRecipientEditable;
     }, [doc, user]);
 
     // ── Load document + groups on mount ──────────────────────

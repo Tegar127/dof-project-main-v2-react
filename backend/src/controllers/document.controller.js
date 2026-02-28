@@ -24,7 +24,7 @@ export const updateDocument = catchAsync(async (req, res) => {
 });
 
 export const deleteDocument = catchAsync(async (req, res) => {
-    const { reason } = req.body;
+    const { reason = '' } = req.body || {};
     await documentService.deleteDocument(req.params.id, req.user, reason);
     return sendSuccess(res, 200, 'Document deleted successfully');
 });

@@ -5,19 +5,37 @@ import { id } from 'date-fns/locale';
 import api from '../utils/api';
 import {
     FileText, FileSignature, CheckCircle, Clock,
-    Bell, Search, Plus, Filter, Trash2, Send, ChevronRight, X, LogOut
+    Bell, Search, Plus, Filter, Trash2, Send, ChevronRight, X, LogOut, AlertCircle
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // State
     const [documents, setDocuments] = useState([]);
     const [distributions, setDistributions] = useState([]);
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
+
+    // Toast Alert
+    const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+
+    const showToast = (message, type = 'success') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+    };
+
+    useEffect(() => {
+        const successParam = searchParams.get('success');
+        if (successParam === 'sent') {
+            showToast('Dokumen berhasil dikirim ke tujuan!', 'success');
+            searchParams.delete('success');
+            setSearchParams(searchParams, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     // Filters
     const [searchTerm, setSearchTerm] = useState('');
@@ -111,10 +129,11 @@ const Dashboard = () => {
                 // Additional defaults
             });
             setShowCreateModal(false);
+            showToast('Dokumen berhasil dibuat!', 'success');
             navigate(`/documents/${res.data.data.id}/edit`);
         } catch (error) {
             console.error("Failed to create document", error);
-            alert("Gagal membuat dokumen");
+            showToast("Gagal membuat dokumen", 'error');
         } finally {
             setIsCreating(false);
         }
@@ -127,9 +146,10 @@ const Dashboard = () => {
             setDocuments(docs => docs.filter(d => d.id !== docToDelete.id));
             setShowDeleteModal(false);
             setDocToDelete(null);
+            showToast('Dokumen berhasil dihapus', 'success');
         } catch (error) {
             console.error("Failed to delete document", error);
-            alert(error.response?.data?.message || "Gagal menghapus dokumen");
+            showToast(error.response?.data?.message || "Gagal menghapus dokumen", 'error');
         }
     };
 
@@ -154,9 +174,10 @@ const Dashboard = () => {
             setDistributeNotes('');
             setDistributeId('');
             setDistributeType('all');
+            showToast('Dokumen berhasil didistribusikan!', 'success');
         } catch (error) {
             console.error("Failed to distribute document", error);
-            alert(error.response?.data?.message || "Gagal mendistribusikan dokumen");
+            showToast(error.response?.data?.message || "Gagal mendistribusikan dokumen", 'error');
         }
     };
 
@@ -209,29 +230,45 @@ const Dashboard = () => {
         if (currentUser.role === 'admin') return true;
         if (d.status === 'approved') return false;
 
-        if (d.author_id === currentUser.id) {
-            return d.status === 'draft' || d.status === 'needs_revision';
-        }
+        const isAuthor = String(d.author_id) === String(currentUser.id);
+        const isAuthorEditable = isAuthor && ['draft', 'needs_revision'].includes(d.status);
 
         const userGrps = [currentUser.group_name, ...(currentUser.groups || []).map(g => typeof g === 'object' ? g.name : g)].filter(Boolean);
         const isGroup = d.target_role === 'group' && userGrps.includes(d.target_value);
         const isDispo = d.target_role === 'dispo' && currentUser.role === 'reviewer';
+        const isTargetUser = d.target_role === 'user' && d.target_value === currentUser.email;
 
-        // Multi-distribution check if backend returns distributions (might not be in standard GET /documents, but good to have)
         const isDist = d.distributions?.some?.(dist =>
             dist.recipient_type === 'all' ||
             (dist.recipient_type === 'user' && String(dist.recipient_id) === String(currentUser.id)) ||
             (dist.recipient_type === 'group' && userGrps.includes(dist.recipient_id))
         );
 
-        if (isGroup || isDispo || isDist) {
-            return ['sent', 'received', 'pending_review'].includes(d.status);
-        }
-        return false;
+        const isRecipient = isGroup || isDispo || isTargetUser || isDist;
+        const isRecipientEditable = isRecipient && ['sent', 'received', 'pending_review'].includes(d.status);
+
+        return isAuthorEditable || isRecipientEditable;
     };
 
     return (
         <div className="min-h-screen bg-slate-50/50 font-sans text-slate-900">
+
+            {/* Toast Notification */}
+            {toast && (
+                <div className="fixed top-8 right-8 z-[100] pointer-events-none">
+                    <div className={`pointer-events-auto flex items-center gap-5 px-6 py-5 rounded-3xl shadow-2xl backdrop-blur-xl border bg-white/95 animate-fade-in-up transition-all ${toast.type === 'success' ? 'border-emerald-100 shadow-emerald-500/20' : 'border-red-100 shadow-red-500/20'}`}>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-inner ${toast.type === 'success' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                            {toast.type === 'success' ? <CheckCircle size={28} /> : <AlertCircle size={28} />}
+                        </div>
+                        <div className="flex-1 pr-4">
+                            <h4 className="text-lg font-black text-slate-800 tracking-tight">
+                                {toast.type === 'success' ? 'Berhasil!' : 'Gagal'}
+                            </h4>
+                            <p className="text-sm font-semibold text-slate-500 mt-0.5 leading-snug">{toast.message}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Top Decoration */}
             <div className="h-64 bg-slate-900 absolute top-0 left-0 right-0 z-0 overflow-hidden">

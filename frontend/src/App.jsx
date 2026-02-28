@@ -34,12 +34,12 @@ function App() {
             {/* Admin gets its own full-page layout (has its own sidebar) */}
             <Route path="/" element={<SmartHome />} />
 
-            {/* Document Editor is a full screen interface like Laravel's create.blade.php */}
+            {/* Document Editor and Viewer are full screen interface like Laravel's view */}
             <Route path="/documents/:id/edit" element={<DocumentEditor />} />
+            <Route path="/documents/:id/view" element={<DocumentViewer />} />
 
             {/* Standard user pages with Layout sidebar */}
             <Route element={<Layout />}>
-              <Route path="/documents/:id/view" element={<DocumentViewer />} />
               <Route path="/documents" element={<Documents />} />
               <Route path="/folders" element={<Folders />} />
             </Route>
