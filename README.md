@@ -1,59 +1,79 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Document Management System (DOF Project)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sebuah sistem manajemen dokumen cerdas berbasis web untuk pembuatan, persetujuan, dan distribusi dokumen resmi seperti Nota Dinas, SPPD (Surat Perintah Perjalanan Dinas), dan Surat Perjanjian.
 
-## About Laravel
+## Stack Teknologi
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Sistem ini telah dimigrasikan dari arsitektur monolit (Laravel) menjadi arsitektur modern berbasis API:
+- **Frontend**: React.js, Vite, Tailwind CSS v4, Lucide React
+- **Backend**: Node.js, Express.js (REST API)
+- **Database**: PostgreSQL dengan Prisma ORM
+- **Fitur Tambahan**: 
+  - `react-signature-canvas` untuk tanda tangan digital interaktif
+  - `html2pdf.js` & `window.print()` untuk export/cetak dokumen
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Core Features (Fitur Utama)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. **Pembuatan Dokumen Beragam**
+   - Mendukung 3 jenis dokumen bawaan: Nota Dinas, SPPD, dan Perjanjian.
+   - Editor Dokumen Dinamis: Input field menyesuaikan dengan jenis dokumen yang dipilih.
 
-## Learning Laravel
+2. **Alur Persetujuan (Approval Workflow)**
+   - Dokumen yang berstatus Draft / Menunggu Review akan masuk ke daftar persetujuan Reviewer (berdasarkan disposisi atau alur berjenjang).
+   - Mendukung penolakan dokumen (dikembalikan dengan catatan revisi) atau persetujuan dokumen.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+3. **Distribusi Dokumen (Document Disposition)**
+   - Admin dapat mendistribusikan dokumen yang sudah berstatus "Disetujui" (Final) ke spesifik Grup, Jabatan, atau User secara langsung maupun global ("Semua Pengguna").
+   - Penerima akan mendapatkan dokumen di Dashboard mereka dengan status "Final (Terdistribusi)".
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+4. **Tanda Tangan Elektronik & Paraf**
+   - Dukungan Tanda Tangan Digital interaktif langsung di browser menggunakan sistem kanvas, atau bisa mengunggah file gambar (PNG/JPG).
+   - Terintegrasi langsung dalam modal pengisian dokumen.
 
-## Laravel Sponsors
+5. **Akses Berbasis Peran & Logika Read-Only**
+   - **User Biasa**: Hanya bisa mengedit dokumen buatannya sendiri (selama berstatus draft/butuh revisi) ATAU dokumen yang dikirimkan rekan divisi kepadanya untuk diteruskan.
+   - **Reviewer**: Bisa menyetujui, menolak, atau mengembalikan dokumen.
+   - **Admin**: Bypass akses edit untuk semua draft.
+   - **Read-Only Mutlak**: Dokumen yang sudah "Disetujui" atau didistribusikan secara final oleh admin (Status: Final/Terdistribusi) akan terkunci secara mutlak (100% Read-Only) untuk **semua** pengguna termasuk Admin, guna menjaga keutuhan dokumen arsip.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+6. **Log Riwayat Pembaruan & Pengerjaan Lengkap**
+   - Riwayat Log Status: Merekam setiap perpindahan dokumen (misal Draft → Menunggu Review → Disetujui).
+   - Log Detail Perubahan File: Mencari perbedaan field yang dimodifikasi oleh pengguna dan membuat ringkasan log spesifik (contoh: "Field 'Perihal' berubah dari X ke Y").
 
-### Premium Partners
+## Struktur Direktori
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+dof-project-main/
+├── backend/                  # REST API Service (Node.js/Express/Prisma)
+│   ├── prisma/               # Skema ORM & Migrations
+│   ├── src/
+│   │   ├── controllers/      # Logika Bisnis
+│   │   ├── routes/           # Definisi Endpoint API
+│   │   └── services/         # Layanan Database/Aplikasi
+│   └── .env                  # Environment Backend
+│
+└── frontend/                 # Client UI (React/Vite)
+    ├── src/
+    │   ├── components/       # Reusable UI (Editor, Modal, Tabel, dll)
+    │   ├── context/          # State Management (AuthContext)
+    │   ├── pages/            # Halaman Dashboard, Viewer, Auth
+    │   └── utils/            # Helper fungsi UI/Format/API 
+    └── index.css             # Konfigurasi Tailwind & Basic Styles
+```
 
-## Contributing
+## Setup Instruksi (Development)
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Backend Setup
+1. Masuk ke folder backend: `cd backend`
+2. Install dependensi: `npm install`
+3. Konfigurasi Database: Buat file `.env` dan setting `DATABASE_URL` ke PostgreSQL Anda.
+4. Jalankan Migrasi & Seed: `npx prisma migrate dev` lalu `npm run seed`
+5. Jalankan server: `npm run dev`
 
-## Code of Conduct
+### Frontend Setup
+1. Masuk ke folder frontend: `cd frontend`
+2. Install dependensi: `npm install`
+3. Sesuaikan URL API backend jika perlu (default ke `http://localhost:5000/api`).
+4. Jalankan aplikasi: `npm run dev`
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
