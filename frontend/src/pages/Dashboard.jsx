@@ -201,15 +201,21 @@ const Dashboard = () => {
     };
 
     // UI Helpers
-    const getStatusLabel = (status) => {
+    const getStatusLabel = (status, doc = null) => {
         const statusMap = {
             'draft': 'Draft',
             'pending_review': 'Menunggu Review',
             'needs_revision': 'Perlu Revisi',
             'approved': 'Disetujui',
-            'sent': 'Final (Terdistribusi)', // Changed from Dikirim
+            'sent': 'Dikirim',
             'received': 'Diterima'
         };
+
+        // Hanya tampilkan 'Final (Terdistribusi)' jika admin sudah distribusikan
+        if (status === 'sent' && doc?.distributions?.length > 0) {
+            return 'Final (Terdistribusi)';
+        }
+
         return statusMap[status] || status;
     };
 
@@ -227,12 +233,20 @@ const Dashboard = () => {
 
     const isDocEditable = (d, currentUser) => {
         if (!d || !currentUser) return false;
+
+        // RULE 1: STRICT BLOCKERS (Berlaku untuk SEMUA ORANG, termasuk Admin)
+        // Finalized / Approved docs are strictly uneditable
+        if (d.status === 'approved') return false;
+
+        // Block 'sent' dan 'received' HANYA JIKA ini adalah hasil distribusi final Admin
+        if (['sent', 'received'].includes(d.status) && d.distributions?.length > 0) return false;
+
+        // RULE 2: ADMIN BYPASS
         if (currentUser.role === 'admin') return true;
 
-        // Finalized / Approved docs are strictly uneditable by anyone except Admin
-        if (['approved', 'sent', 'received'].includes(d.status)) return false;
-
+        // RULE 3: REGULAR USERS
         const isAuthor = String(d.author_id) === String(currentUser.id);
+        // Author can edit when draft, needs_revision, or even when it's just 'sent' but not distributed
         const isAuthorEditable = isAuthor && ['draft', 'needs_revision'].includes(d.status);
 
         const userGrps = [currentUser.group_name, ...(currentUser.groups || []).map(g => typeof g === 'object' ? g.name : g)].filter(Boolean);
@@ -242,7 +256,8 @@ const Dashboard = () => {
 
         // Is recipient of the pre-approval forwarding loop
         const isRecipient = isGroup || isDispo || isTargetUser;
-        const isRecipientEditable = isRecipient && ['pending_review'].includes(d.status);
+        // Recipients can edit when pending_review, sent, or received (as long as it wasn't blocked above by admin dist)
+        const isRecipientEditable = isRecipient && ['pending_review', 'sent', 'received'].includes(d.status);
 
         return isAuthorEditable || isRecipientEditable;
     };
@@ -564,7 +579,7 @@ const Dashboard = () => {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(doc.status)}`}>
-                                                    {getStatusLabel(doc.status)}
+                                                    {getStatusLabel(doc.status, doc)}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">

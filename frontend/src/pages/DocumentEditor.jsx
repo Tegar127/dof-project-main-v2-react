@@ -310,11 +310,17 @@ const DocumentEditor = () => {
     // ── isEditable — matches index.js lines 5-33 ─────────────
     const isEditable = useCallback((d = doc) => {
         if (!d || !user) return false;
-        if (user.role === 'admin') return true;
 
         const status = d.status;
-        if (status === 'approved') return false;
 
+        // RULE 1: STRICT BLOCKERS (Berlaku mutlak untuk semuanya)
+        if (status === 'approved') return false;
+        if (['sent', 'received'].includes(status) && d.distributions?.length > 0) return false;
+
+        // RULE 2: ADMIN BYPASS
+        if (user.role === 'admin') return true;
+
+        // RULE 3: REGULAR USERS
         // Author: draft/needs_revision only (if they are NOT currently the recipient)
         const isAuthor = String(d.author_id) === String(user.id);
         const isAuthorEditable = isAuthor && ['draft', 'needs_revision'].includes(status);
@@ -326,14 +332,7 @@ const DocumentEditor = () => {
         const isTargetDispo = d.target_role === 'dispo' && user.role === 'reviewer';
         const isTargetUser = d.target_role === 'user' && d.target_value === user.email;
 
-        // Multi-distribution check
-        const isDistributedRecipient = d.distributions && d.distributions.some(dist =>
-            dist.recipient_type === 'all' ||
-            (dist.recipient_type === 'user' && String(dist.recipient_id) === String(user.id)) ||
-            (dist.recipient_type === 'group' && userGroups.includes(dist.recipient_id))
-        );
-
-        const isRecipient = isTargetGroup || isTargetDispo || isTargetUser || isDistributedRecipient;
+        const isRecipient = isTargetGroup || isTargetDispo || isTargetUser;
         const isRecipientEditable = isRecipient && ['sent', 'received', 'pending_review'].includes(status);
 
         return isAuthorEditable || isRecipientEditable;

@@ -45,7 +45,13 @@ const SignatureModal = ({ isOpen, onClose, onSave, title = "Tanda Tangan" }) => 
                     alert("Tanda tangan kosong! Silakan coret tanda tangan terlebih dahulu.");
                     return;
                 }
-                const dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+                let dataUrl;
+                try {
+                    dataUrl = sigCanvas.current.getTrimmedCanvas().toDataURL('image/png');
+                } catch (trimError) {
+                    console.warn("getTrimmedCanvas gagal, fallback ke toDataURL:", trimError);
+                    dataUrl = sigCanvas.current.getCanvas().toDataURL('image/png');
+                }
                 onSave(dataUrl);
             } else if (mode === 'upload') {
                 if (!uploadedImage) {

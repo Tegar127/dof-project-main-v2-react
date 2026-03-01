@@ -1,3 +1,6 @@
+import React, { useState } from 'react';
+import SignatureModal from './SignatureModal';
+
 function SectionHeading({ number, title }) {
     return (
         <div className="flex items-center gap-3">
