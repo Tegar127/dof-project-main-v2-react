@@ -31,3 +31,8 @@ export const getGroupStats = catchAsync(async (req, res) => {
     const stats = await groupService.getGroupStats(req.params.id);
     return res.status(200).json(stats);
 });
+
+export const resetGroupTime = catchAsync(async (req, res) => {
+    await groupService.resetGroupTime(req.params.id);
+    return sendSuccess(res, 200, 'Group work time successfully reset');
+});

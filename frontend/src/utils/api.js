@@ -22,18 +22,13 @@ api.interceptors.request.use(
     }
 );
 
-// Add a response interceptor to handle 401s (token expired/invalid)
+// Add a response interceptor
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response && error.response.status === 401) {
-            // Optional: Handle auto-logout or token refresh here
-            // Currently letting AuthContext handle the state via its own checks
-            localStorage.removeItem('token');
-            if (window.location.pathname !== '/login') {
-                window.location.href = '/login';
-            }
-        }
+        // We removed the aggressive 401 interceptor that forcefully clears the token here.
+        // AuthContext is now fully responsible for handling authentication state and logouts.
+        // This prevents sudden logouts caused by intermittent 401 errors (e.g. nodemon restarts or specific endpoint unauthorized responses).
         return Promise.reject(error);
     }
 );

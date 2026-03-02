@@ -1,5 +1,6 @@
 import * as groupRepository from '../repositories/group.repository.js';
 import { NotFoundError, BadRequestError } from '../utils/errors.js';
+import prisma from '../config/database.js';
 
 export const getAllGroups = async (user) => {
     const groups = await groupRepository.findAll(user);
@@ -64,11 +65,6 @@ export const getGroupStats = async (id) => {
     const total_minutes = await groupRepository.getGroupTotalWorkLogDuration(group.name);
 
     // Dapatkan daftar ID dokumen unik yang pernah dikerjakan grup ini
-    // Import ini membutuhkan prisma, jadi lebih baik kita ambil via repository jika memungkinkan,
-    // tapi untuk kecepatan, kita panggil langsung dari Prisma karena kita diluar repo:
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
-
     const logs = await prisma.documentWorkLog.findMany({
         where: { group_name: group.name },
         distinct: ['document_id'],
@@ -121,4 +117,21 @@ export const getGroupStats = async (id) => {
         group: { ...group, members, total_minutes },
         documents
     };
+};
+
+export const resetGroupTime = async (id) => {
+    const group = await prisma.group.findUnique({
+        where: { id: parseInt(id) }
+    });
+
+    if (!group) {
+        throw new NotFoundError('Group not found');
+    }
+
+    // Delete all work logs associated with this group's name
+    await prisma.documentWorkLog.deleteMany({
+        where: { group_name: group.name }
+    });
+
+    return true;
 };

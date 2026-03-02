@@ -17,5 +17,6 @@ router.use(requireRole('admin'));
 router.post('/', validate(createGroupSchema), groupController.createGroup);
 router.put('/:id', validate(updateGroupSchema), groupController.updateGroup);
 router.delete('/:id', groupController.deleteGroup);
+router.delete('/:id/reset-time', groupController.resetGroupTime);
 
 export default router;
