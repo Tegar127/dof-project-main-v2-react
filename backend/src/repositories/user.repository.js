@@ -52,7 +52,14 @@ export const getUserGroups = async (userId) => {
     return memberships.map((m) => m.group);
 };
 
-export const getUserTotalWorkLogDuration = async (_userId) => {
-    // Table document_work_logs not in current schema
-    return 0;
+export const getUserTotalWorkLogDuration = async (userId) => {
+    const aggregate = await prisma.documentWorkLog.aggregate({
+        _sum: {
+            duration_minutes: true,
+        },
+        where: {
+            user_id: Number(userId),
+        },
+    });
+    return aggregate._sum.duration_minutes || 0;
 };

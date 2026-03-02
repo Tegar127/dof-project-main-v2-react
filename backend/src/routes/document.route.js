@@ -22,6 +22,10 @@ router.get('/:id', documentController.getDocument);
 router.put('/:id', documentController.updateDocument);
 router.delete('/:id', documentController.deleteDocument);
 
+import * as documentWorkLogController from '../controllers/documentWorkLog.controller.js';
+router.get('/:id/work-logs', documentWorkLogController.getWorkLogs);
+router.post('/:id/work-logs', documentWorkLogController.storeWorkLog);
+
 // Document Sub-resources (Logs, Versions)
 router.get('/:id/logs', documentController.getLogs);
 router.get('/:id/versions', documentController.getVersions);

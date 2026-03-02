@@ -16,7 +16,11 @@ export const AuthProvider = ({ children }) => {
                     setUser(response.data);
                 } catch (error) {
                     console.error('Failed to authenticate:', error);
-                    localStorage.removeItem('token');
+                    // Hanya hapus token jika server explicitly menolak (401 Unauthorized)
+                    // Jika error network (Nodemon restart) biarkan token tetap ada
+                    if (error.response && error.response.status === 401) {
+                        localStorage.removeItem('token');
+                    }
                 }
             }
             setLoading(false);

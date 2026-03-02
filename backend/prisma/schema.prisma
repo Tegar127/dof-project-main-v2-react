@@ -32,6 +32,7 @@ model User {
   documentLogs            DocumentLog[]         @relation("LogUser")
   readReceipts            DocumentReadReceipt[]
   groupMemberships        GroupUser[]
+  workLogs                DocumentWorkLog[]
 
   @@map("users")
 }
@@ -110,6 +111,7 @@ model Document {
   logs          DocumentLog[]
   readReceipts  DocumentReadReceipt[]
   distributions DocumentDistribution[]
+  workLogs      DocumentWorkLog[]
 
   @@map("documents")
 }
@@ -207,4 +209,22 @@ model Notification {
   updated_at      DateTime @updatedAt
 
   @@map("notifications")
+}
+
+model DocumentWorkLog {
+  id               Int      @id @default(autoincrement())
+  document_id      Int
+  user_id          Int?
+  group_name       String?
+  start_time       DateTime
+  end_time         DateTime
+  duration_minutes Int
+  status           String   @default("finished")
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  document Document @relation(fields: [document_id], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("document_work_logs")
 }

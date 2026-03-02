@@ -63,9 +63,62 @@ export const getGroupStats = async (id) => {
     const members = await groupRepository.getGroupMembers(id);
     const total_minutes = await groupRepository.getGroupTotalWorkLogDuration(group.name);
 
-    // document_work_logs table not in current schema, return empty
+    // Dapatkan daftar ID dokumen unik yang pernah dikerjakan grup ini
+    // Import ini membutuhkan prisma, jadi lebih baik kita ambil via repository jika memungkinkan,
+    // tapi untuk kecepatan, kita panggil langsung dari Prisma karena kita diluar repo:
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+
+    const logs = await prisma.documentWorkLog.findMany({
+        where: { group_name: group.name },
+        distinct: ['document_id'],
+        select: { document_id: true }
+    });
+
+    const documentIds = logs.map(l => l.document_id);
+
+    let documents = [];
+    if (documentIds.length > 0) {
+        const rootDocs = await prisma.document.findMany({
+            where: { id: { in: documentIds } },
+            select: {
+                id: true,
+                title: true,
+                type: true,
+                status: true,
+                created_at: true,
+                updated_at: true
+            },
+            orderBy: {
+                updated_at: 'desc'
+            }
+        });
+
+        // Group the logs by document_id and sum their duration_minutes
+        const groupedLogs = await prisma.documentWorkLog.groupBy({
+            by: ['document_id'],
+            where: {
+                group_name: group.name,
+                document_id: { in: documentIds }
+            },
+            _sum: {
+                duration_minutes: true
+            }
+        });
+
+        // Map the sums back to the actual document array
+        documents = rootDocs.map(doc => {
+            const sumData = groupedLogs.find(g => g.document_id === doc.id);
+            return {
+                ...doc,
+                total_minutes: sumData?._sum?.duration_minutes || 0,
+                last_worked: doc.updated_at
+            };
+        });
+    }
+
     return {
         group: { ...group, members, total_minutes },
-        documents: []
+        documents
     };
 };

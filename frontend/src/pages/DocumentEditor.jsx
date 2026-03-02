@@ -306,6 +306,7 @@ const DocumentEditor = () => {
     const [confirm, setConfirm] = useState(null); // { title, message, onConfirm }
     const [feedback, setFeedback] = useState('');
     const printRef = useRef(null);
+    const sessionStartTime = useRef(null);
 
     // ── isEditable — matches index.js lines 5-33 ─────────────
     const isEditable = useCallback((d = doc) => {
@@ -337,6 +338,43 @@ const DocumentEditor = () => {
 
         return isAuthorEditable || isRecipientEditable;
     }, [doc, user]);
+
+    // ── Time Tracking (Work Logs) ────────────────────────────
+    const sendWorkLog = useCallback(() => {
+        if (!sessionStartTime.current || !id) return;
+
+        const startTime = sessionStartTime.current.toISOString();
+        const endTime = new Date().toISOString();
+        const payload = JSON.stringify({ start_time: startTime, end_time: endTime });
+        const token = localStorage.getItem('token');
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
+        fetch(`${baseUrl}/documents/${id}/work-logs`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            },
+            body: payload,
+            keepalive: true
+        }).catch(err => console.error("Gagal mengirim work log:", err));
+
+        sessionStartTime.current = null;
+    }, [id]);
+
+    useEffect(() => {
+        if (isEditable()) {
+            sessionStartTime.current = new Date();
+
+            const handleBeforeUnload = () => sendWorkLog();
+            window.addEventListener('beforeunload', handleBeforeUnload);
+
+            return () => {
+                sendWorkLog();
+                window.removeEventListener('beforeunload', handleBeforeUnload);
+            };
+        }
+    }, [isEditable, sendWorkLog]);
 
     // ── Load document + groups on mount ──────────────────────
     useEffect(() => {
@@ -414,6 +452,10 @@ const DocumentEditor = () => {
             };
             const res = await api.put(`/documents/${id}`, payload);
             if (res.data?.data) setDoc(prev => ({ ...prev, ...res.data.data }));
+
+            sendWorkLog();
+            sessionStartTime.current = new Date();
+
             return true;
         } catch (err) {
             setErrorMsg(err.response?.data?.message ?? 'Gagal menyimpan dokumen.');
@@ -458,6 +500,9 @@ const DocumentEditor = () => {
             const res = await api.get(`/documents/${id}`);
             setDoc(res.data.data);
             setSuccessMsg(newStatus === 'approved' ? 'Dokumen berhasil disetujui!' : 'Dokumen dikembalikan untuk revisi.');
+
+            sendWorkLog();
+            sessionStartTime.current = new Date();
         } catch (err) {
             setErrorMsg(err.response?.data?.message ?? 'Gagal memperbarui status.');
         } finally {
