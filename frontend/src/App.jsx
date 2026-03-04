@@ -8,17 +8,17 @@ import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 
 // Pages
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import AdminDashboard from './pages/AdminDashboard';
+import DashboardRouter from './pages/dashboard/index';
+import AdminDashboard from './pages/dashboard/AdminDashboard';
 import Documents from './pages/Documents';
 import Folders from './pages/Folders';
 import DocumentEditor from './pages/DocumentEditor';
 import DocumentViewer from './pages/DocumentViewer';
 
-// Smart Home: redirects admin to admin dashboard, user to user dashboard
+// Smart Home: redirects admin to admin dashboard, user/reviewer to their dashboard
 const SmartHome = () => {
   const { isAdmin } = useAuth();
-  return isAdmin ? <AdminDashboard /> : <Dashboard />;
+  return isAdmin ? <AdminDashboard /> : <DashboardRouter />;
 };
 
 function App() {

@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api';
 import { Users, UsersRound, ClipboardList, CheckCircle, XCircle } from 'lucide-react';
 
 // Sub-Components
-import AdminSidebar from '../components/admin/AdminSidebar';
-import UsersTab from '../components/admin/UsersTab';
-import GroupsTab from '../components/admin/GroupsTab';
-import DistributionsTab from '../components/admin/DistributionsTab';
-import AllDocumentsTab from '../components/admin/AllDocumentsTab';
+import AdminSidebar from '../../components/admin/AdminSidebar';
+import UsersTab from '../../components/admin/UsersTab';
+import GroupsTab from '../../components/admin/GroupsTab';
+import DistributionsTab from '../../components/admin/DistributionsTab';
+import AllDocumentsTab from '../../components/admin/AllDocumentsTab';
 
 /* ═══════════════════════════════════════════════════════════════
    TAB TITLES & DESCRIPTIONS
