@@ -41,7 +41,11 @@ export const findAllForUser = async (user, filters = {}) => {
                 AND (
                     dd.recipient_type = 'all'
                     OR (dd.recipient_type = 'user'  AND dd.recipient_id = $${idx + 4})
-                    OR (dd.recipient_type = 'group' AND dd.recipient_id = $${idx + 3})
+                    OR (dd.recipient_type = 'group' AND EXISTS (
+                        SELECT 1 FROM groups g
+                        WHERE g.id::text = dd.recipient_id
+                        AND g.name = $${idx + 3}
+                    ))
                 )
             )
         )`);
