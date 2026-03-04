@@ -224,7 +224,7 @@ export const markAsRead = async (documentId, userId) => {
 export const getReadReceipts = async (documentId) => {
     return await prisma.documentReadReceipt.findMany({
         where: { document_id: Number(documentId) },
-        include: { user: { select: { name: true } } }
+        include: { user: { select: { name: true, position: true, group_name: true } } }
     });
 };
 

@@ -236,25 +236,41 @@ const DocumentViewer = () => {
 
                                 {activeTab === 'readStatus' && (
                                     <div className="space-y-3">
-                                        {readReceipts.map(r => (
-                                            <div key={r.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 flex items-center justify-between">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
-                                                        {r.user_name?.charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-sm font-bold text-slate-800">{r.user_name}</div>
-                                                        <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                                                            <Clock size={12} />
-                                                            Dibaca: {new Date(r.read_at).toLocaleString()}
+                                        {readReceipts.map(r => {
+                                            const userName = r.user?.name || r.user_name || 'Pengguna';
+                                            const position = r.user?.position || null;
+                                            const divisi = r.user?.group_name || null;
+                                            return (
+                                                <div key={r.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50/50 flex items-center justify-between">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-sm shrink-0">
+                                                            {userName.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm font-bold text-slate-800">{userName}</div>
+                                                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                                {position && (
+                                                                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-medium">{position}</span>
+                                                                )}
+                                                                {divisi && (
+                                                                    <span className="text-[11px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-medium">{divisi}</span>
+                                                                )}
+                                                                {!position && !divisi && (
+                                                                    <span className="text-xs text-slate-400">-</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-xs text-slate-400 flex items-center gap-1 mt-1">
+                                                                <Clock size={12} />
+                                                                Dibaca: {new Date(r.read_at).toLocaleString()}
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                    <div className="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0">
+                                                        Terbaca
+                                                    </div>
                                                 </div>
-                                                <div className="px-3 py-1 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full text-[10px] font-bold uppercase tracking-wide">
-                                                    Terbaca
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                         {readReceipts.length === 0 && <div className="text-center text-slate-500 py-4">Dokumen belum dibaca oleh siapapun</div>}
                                     </div>
                                 )}
