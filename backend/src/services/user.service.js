@@ -74,7 +74,10 @@ export const updateUser = async (id, data) => {
     }
 
     if (updateData.password) {
-        updateData.password = await bcrypt.hash(updateData.password, 10);
+        const bcryptHashRegex = /^\$2[aby]\$\d{2}\$.{53}$/;
+        if (!bcryptHashRegex.test(updateData.password)) {
+            updateData.password = await bcrypt.hash(updateData.password, 10);
+        }
     }
 
     // updated_at handled automatically by Prisma @updatedAt

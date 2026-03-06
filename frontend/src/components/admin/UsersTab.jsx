@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, UserPlus, Edit2, Trash2, X } from 'lucide-react';
 
 /* ── Role Badge Styling ── */
@@ -92,10 +92,20 @@ const UserForm = ({ form, setForm, groups, editing, onSubmit, onCancel }) => (
 
 /* ── Users Table ── */
 const UsersTable = ({ users, searchTerm, onSearch, onNew, onEdit, onDelete }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm]);
+
     const filtered = users.filter(u =>
         u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         u.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
+    const paginatedUsers = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
@@ -127,7 +137,7 @@ const UsersTable = ({ users, searchTerm, onSearch, onNew, onEdit, onDelete }) =>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                        {filtered.map(user => (
+                        {paginatedUsers.map(user => (
                             <tr key={user.id} className="hover:bg-slate-50/80 transition-colors group">
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-4">
@@ -187,6 +197,31 @@ const UsersTable = ({ users, searchTerm, onSearch, onNew, onEdit, onDelete }) =>
                     </tbody>
                 </table>
             </div>
+
+            {/* ── Pagination Footer ── */}
+            {totalPages > 1 && (
+                <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <span className="text-xs text-slate-500 font-medium">
+                        Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filtered.length)} dari {filtered.length} pengguna
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                        >
+                            Sebelumnya
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                        >
+                            Selanjutnya
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

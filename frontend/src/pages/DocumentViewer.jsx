@@ -327,8 +327,14 @@ const DocumentViewer = () => {
                             </div>
 
                             <div className="mt-6 pt-6 border-t border-slate-200 flex flex-col gap-3">
+                                {doc.status === 'needs_revision' && isAuthor && (
+                                    <div className="mb-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+                                        <p className="font-bold mb-1">Dokumen Perlu Revisi</p>
+                                        <p className="text-xs">Silakan buka editor untuk memperbaiki dokumen dan mengirimnya kembali.</p>
+                                    </div>
+                                )}
                                 <Link to={`/documents/${doc.id}/edit`} className="w-full py-2.5 bg-indigo-50 text-indigo-700 font-bold rounded-lg text-center hover:bg-indigo-100 transition-colors">
-                                    Buka Editor
+                                    {doc.status === 'needs_revision' && isAuthor ? 'Buka Editor untuk Revisi' : 'Buka Editor'}
                                 </Link>
                             </div>
                         </div>

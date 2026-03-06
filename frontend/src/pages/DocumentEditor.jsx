@@ -685,7 +685,7 @@ const DocumentEditor = () => {
                                                 onClick={() => setShowSendModal(true)}
                                                 className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 group flex items-center justify-center gap-3"
                                             >
-                                                <span>KIRIM DOKUMEN</span>
+                                                <span>{status === 'needs_revision' ? 'KIRIM REVISI' : 'KIRIM DOKUMEN'}</span>
                                                 <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
                                             </button>
                                         )}

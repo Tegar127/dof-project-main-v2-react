@@ -26,6 +26,7 @@
     "express-rate-limit": "^8.2.1",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
+    "ldapts": "^8.1.7",
     "pg": "^8.14.1",
     "prisma": "^6.4.1",
     "zod": "^4.3.6"

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
-import { Users, UsersRound, ClipboardList, CheckCircle, XCircle } from 'lucide-react';
+import { Users, UsersRound, ClipboardList, CheckCircle, XCircle, FileText, Archive } from 'lucide-react';
 
 // Sub-Components
 import AdminSidebar from '../../components/admin/AdminSidebar';
@@ -72,51 +72,107 @@ const Toast = ({ notification, onClose }) => {
 /* ═══════════════════════════════════════════════════════════════
    DASHBOARD STATS (Home Tab)
    ═══════════════════════════════════════════════════════════════ */
-const DashboardStats = ({ users, groups, setActiveTab }) => (
-    <div>
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-                <div>
-                    <div className="text-slate-500 text-sm font-medium mb-1">Total Users</div>
-                    <div className="text-3xl font-bold text-slate-800">{users.length}</div>
-                </div>
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><Users size={24} /></div>
-            </div>
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
-                <div>
-                    <div className="text-slate-500 text-sm font-medium mb-1">Total Groups</div>
-                    <div className="text-3xl font-bold text-slate-800">{groups.length}</div>
-                </div>
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><UsersRound size={24} /></div>
-            </div>
-            <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-2xl shadow-lg shadow-indigo-500/20 text-white flex flex-col justify-center">
-                <div className="text-indigo-100 text-sm font-medium mb-1">System Status</div>
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <div className="text-xl font-bold">Operational</div>
-                </div>
-            </div>
-        </div>
+const DashboardStats = ({ users, groups, allDocuments, setActiveTab }) => {
+    const totalDocs = allDocuments.length;
+    const approvedDocs = allDocuments.filter(d => d.status === 'approved').length;
+    const pendingDocs = allDocuments.filter(d => ['pending', 'pending_review'].includes(d.status)).length;
+    const finalDocs = allDocuments.filter(d => ['final', 'distributed'].includes(d.status)).length;
 
-        {/* Quick Links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="font-bold text-slate-800 mb-4">Quick Links</h3>
-                <div className="grid grid-cols-2 gap-4">
-                    <button onClick={() => setActiveTab('users')} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group">
-                        <Users size={24} className="text-indigo-600 mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="text-sm font-bold text-slate-800">Manage Users</div>
-                    </button>
-                    <button onClick={() => setActiveTab('distributions')} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group">
-                        <ClipboardList size={24} className="text-indigo-600 mb-2 group-hover:scale-110 transition-transform" />
-                        <div className="text-sm font-bold text-slate-800">Monitoring</div>
-                    </button>
+    const approvedPct = totalDocs ? Math.round((approvedDocs / totalDocs) * 100) : 0;
+    const pendingPct = totalDocs ? Math.round((pendingDocs / totalDocs) * 100) : 0;
+    const finalPct = totalDocs ? Math.round((finalDocs / totalDocs) * 100) : 0;
+
+    return (
+        <div>
+            {/* Metric Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <div className="text-slate-500 text-sm font-medium mb-1">Total Users</div>
+                        <div className="text-3xl font-bold text-slate-800">{users.length}</div>
+                    </div>
+                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center float-right"><Users size={24} /></div>
+                </div>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <div className="text-slate-500 text-sm font-medium mb-1">Total Groups</div>
+                        <div className="text-3xl font-bold text-slate-800">{groups.length}</div>
+                    </div>
+                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center float-right"><UsersRound size={24} /></div>
+                </div>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                    <div>
+                        <div className="text-slate-500 text-sm font-medium mb-1">Total Dokumen</div>
+                        <div className="text-3xl font-bold text-slate-800">{totalDocs}</div>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center float-right"><FileText size={24} /></div>
+                </div>
+                <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-6 rounded-2xl shadow-lg shadow-indigo-500/20 text-white flex flex-col justify-center">
+                    <div className="text-indigo-100 text-sm font-medium mb-1">System Status</div>
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                        <div className="text-xl font-bold">Operational</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Document Statistics Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+                    <h3 className="font-bold text-slate-800 mb-6">Distribusi Status Dokumen</h3>
+                    <div className="space-y-6">
+                        <div>
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="text-slate-600 font-medium tracking-wide">Disetujui (Approved)</span>
+                                <span className="font-bold text-emerald-600">{approvedDocs} <span className="text-slate-400 font-normal">({approvedPct}%)</span></span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div className="bg-emerald-500 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${approvedPct}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="text-slate-600 font-medium tracking-wide">Menunggu (Pending)</span>
+                                <span className="font-bold text-amber-500">{pendingDocs} <span className="text-slate-400 font-normal">({pendingPct}%)</span></span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div className="bg-amber-400 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${pendingPct}%` }}></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between text-sm mb-2">
+                                <span className="text-slate-600 font-medium tracking-wide">Final / Terdistribusi</span>
+                                <span className="font-bold text-blue-600">{finalDocs} <span className="text-slate-400 font-normal">({finalPct}%)</span></span>
+                            </div>
+                            <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div className="bg-blue-500 h-2.5 rounded-full transition-all duration-1000" style={{ width: `${finalPct}%` }}></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Quick Links inside the same grid for better layout */}
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+                    <h3 className="font-bold text-slate-800 mb-4">Akses Cepat</h3>
+                    <div className="flex-1 flex flex-col gap-3">
+                        <button onClick={() => setActiveTab('users')} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group flex items-center gap-4">
+                            <Users size={20} className="text-indigo-600 group-hover:scale-110 transition-transform" />
+                            <div className="text-sm font-bold text-slate-800">Manajemen Pengguna</div>
+                        </button>
+                        <button onClick={() => setActiveTab('distributions')} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group flex items-center gap-4">
+                            <ClipboardList size={20} className="text-indigo-600 group-hover:scale-110 transition-transform" />
+                            <div className="text-sm font-bold text-slate-800">Monitoring Distribusi</div>
+                        </button>
+                        <button onClick={() => setActiveTab('all_documents')} className="p-4 bg-slate-50 rounded-xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group flex items-center gap-4">
+                            <Archive size={20} className="text-indigo-600 group-hover:scale-110 transition-transform" />
+                            <div className="text-sm font-bold text-slate-800">Arsip Seluruh Dokumen</div>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 /* ═══════════════════════════════════════════════════════════════
    MAIN ADMIN DASHBOARD
@@ -276,7 +332,7 @@ const AdminDashboard = () => {
 
                 {/* Tab Content */}
                 {activeTab === 'dashboard' && (
-                    <DashboardStats users={users} groups={groups} setActiveTab={setActiveTab} />
+                    <DashboardStats users={users} groups={groups} allDocuments={allDocuments} setActiveTab={setActiveTab} />
                 )}
 
                 {activeTab === 'users' && (

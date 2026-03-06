@@ -33,6 +33,7 @@ const UserDashboard = () => {
     // ── Filter state ──
     const [searchTerm, setSearchTerm] = useState('');
     const [typeFilter, setTypeFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [showFilters, setShowFilters] = useState(false);
@@ -83,6 +84,7 @@ const UserDashboard = () => {
     const filteredDocs = documents.filter(doc => {
         const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = typeFilter === 'all' || doc.type === typeFilter;
+        const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
         let matchesDate = true;
         if (dateFrom && dateTo) {
             const docDate = new Date(doc.created_at);
@@ -90,7 +92,7 @@ const UserDashboard = () => {
             to.setHours(23, 59, 59, 999);
             matchesDate = docDate >= new Date(dateFrom) && docDate <= to;
         }
-        return matchesSearch && matchesType && matchesDate;
+        return matchesSearch && matchesType && matchesStatus && matchesDate;
     });
 
     const approvedCount = filteredDocs.filter(d => d.status === 'approved').length;
@@ -214,6 +216,7 @@ const UserDashboard = () => {
                         documents={filteredDocs}
                         searchTerm={searchTerm} setSearchTerm={setSearchTerm}
                         typeFilter={typeFilter} setTypeFilter={setTypeFilter}
+                        statusFilter={statusFilter} setStatusFilter={setStatusFilter}
                         dateFrom={dateFrom} setDateFrom={setDateFrom}
                         dateTo={dateTo} setDateTo={setDateTo}
                         showFilters={showFilters} setShowFilters={setShowFilters}

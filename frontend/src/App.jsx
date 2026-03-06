@@ -14,6 +14,7 @@ import Documents from './pages/Documents';
 import Folders from './pages/Folders';
 import DocumentEditor from './pages/DocumentEditor';
 import DocumentViewer from './pages/DocumentViewer';
+import Profile from './pages/Profile';
 
 // Smart Home: redirects admin to admin dashboard, user/reviewer to their dashboard
 const SmartHome = () => {
@@ -37,6 +38,7 @@ function App() {
             {/* Document Editor and Viewer are full screen interface like Laravel's view */}
             <Route path="/documents/:id/edit" element={<DocumentEditor />} />
             <Route path="/documents/:id/view" element={<DocumentViewer />} />
+            <Route path="/profile" element={<Profile />} />
 
             {/* Standard user pages with Layout sidebar */}
             <Route element={<Layout />}>

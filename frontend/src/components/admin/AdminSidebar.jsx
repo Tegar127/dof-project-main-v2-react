@@ -1,7 +1,7 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 import {
     Home, Users, UsersRound, ClipboardList, Archive,
-    ChevronLeft, LogOut, FileText
+    ChevronLeft, LogOut, FileText, User
 } from 'lucide-react';
 
 const TABS = [
@@ -41,8 +41,8 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, on
                         onClick={() => setActiveTab(id)}
                         title={!sidebarOpen ? label : ''}
                         className={`w-full flex items-center gap-4 px-4 py-3 text-sm font-bold rounded-xl transition-all group border ${activeTab === id
-                                ? 'bg-white text-indigo-700 shadow-lg border-slate-300'
-                                : 'text-slate-600 hover:bg-white/40 hover:text-slate-900 border-transparent'
+                            ? 'bg-white text-indigo-700 shadow-lg border-slate-300'
+                            : 'text-slate-600 hover:bg-white/40 hover:text-slate-900 border-transparent'
                             }`}
                     >
                         <Icon size={20} className={`flex-shrink-0 ${activeTab === id ? 'text-indigo-600' : 'text-slate-500'}`} />
@@ -52,11 +52,19 @@ const AdminSidebar = ({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen, on
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-300 bg-slate-300/40">
+            <div className="p-4 border-t border-slate-300 bg-slate-300/40 flex flex-col gap-2">
+                <Link
+                    to="/profile"
+                    title={!sidebarOpen ? 'Profil Saya' : ''}
+                    className="w-full flex items-center gap-4 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-white/50 rounded-xl transition-colors border border-transparent"
+                >
+                    <User size={20} className="flex-shrink-0 text-slate-500" />
+                    {sidebarOpen && <span className="whitespace-nowrap">Profil Saya</span>}
+                </Link>
                 <button
                     onClick={onLogout}
                     title={!sidebarOpen ? 'Sign Out' : ''}
-                    className="w-full flex items-center gap-4 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                    className="w-full flex items-center gap-4 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors border border-transparent"
                 >
                     <LogOut size={20} className="flex-shrink-0" />
                     {sidebarOpen && <span className="whitespace-nowrap">Sign Out</span>}

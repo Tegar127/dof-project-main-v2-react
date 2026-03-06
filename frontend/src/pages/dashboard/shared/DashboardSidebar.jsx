@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
 import {
     FileText, FileSignature, Plus, ChevronDown,
-    LayoutDashboard, Bell, LogOut,
+    LayoutDashboard, Bell, LogOut, User
 } from 'lucide-react';
 import { getInitials, getRoleLabel } from './helpers';
 
@@ -97,6 +98,13 @@ const DashboardSidebar = ({ user, logout, sidebarOpen, setSidebarOpen, onCreateD
                         </div>
                     )}
                 </div>
+                <Link
+                    to="/profile"
+                    className={`mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 transition text-sm font-semibold ${!sidebarOpen && 'justify-center'}`}
+                >
+                    <User size={16} className="shrink-0" />
+                    {sidebarOpen && <span>Profil Saya</span>}
+                </Link>
                 <button
                     onClick={logout}
                     className={`mt-1 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-500 hover:bg-red-50 transition text-sm font-semibold ${!sidebarOpen && 'justify-center'}`}

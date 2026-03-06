@@ -12,6 +12,9 @@ router.use(requireAuth);
 router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUser);
 
+// Authenticated users can update their own profile (password)
+router.put('/profile/update', validate(updateUserSchema), userController.updateProfile);
+
 // Only admins can create, update, delete
 router.use(requireRole('admin'));
 

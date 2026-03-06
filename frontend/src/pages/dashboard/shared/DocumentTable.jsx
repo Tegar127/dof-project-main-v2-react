@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
@@ -25,6 +25,7 @@ const DocumentTable = ({
     documents,
     searchTerm, setSearchTerm,
     typeFilter, setTypeFilter,
+    statusFilter, setStatusFilter,
     dateFrom, setDateFrom,
     dateTo, setDateTo,
     showFilters, setShowFilters,
@@ -33,6 +34,16 @@ const DocumentTable = ({
     onDelete,
     onDistribute,
 }) => {
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, typeFilter, statusFilter, dateFrom, dateTo]);
+
+    const totalPages = Math.ceil(documents.length / itemsPerPage);
+    const paginatedDocs = documents.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
     return (
         <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
             {/* ── Table Header / Filters ── */}
@@ -69,7 +80,7 @@ const DocumentTable = ({
                 </div>
 
                 {showFilters && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-gray-50">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mt-4 pt-4 border-t border-gray-50">
                         <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Tipe Dokumen</label>
                             <select
@@ -83,6 +94,24 @@ const DocumentTable = ({
                                 <option value="perj">Perjanjian</option>
                             </select>
                         </div>
+                        {setStatusFilter && (
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Status</label>
+                                <select
+                                    value={statusFilter}
+                                    onChange={e => setStatusFilter(e.target.value)}
+                                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-400"
+                                >
+                                    <option value="all">Semua Status</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="pending_review">Menunggu Review</option>
+                                    <option value="needs_revision">Perlu Revisi</option>
+                                    <option value="approved">Disetujui</option>
+                                    <option value="sent">Terkirim</option>
+                                    <option value="final">Final / Arsip</option>
+                                </select>
+                            </div>
+                        )}
                         <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Dari Tanggal</label>
                             <input
@@ -127,7 +156,7 @@ const DocumentTable = ({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
-                            {documents.map(doc => {
+                            {paginatedDocs.map(doc => {
                                 const docCfg = getDocTypeConfig(doc.type);
                                 const statusCfg = getStatusConfig(doc.status);
 
@@ -217,6 +246,32 @@ const DocumentTable = ({
                     </table>
                 )}
             </div>
+
+            {/* ── Pagination Footer ── */}
+            {totalPages > 1 && (
+                <div className="px-5 py-4 border-t border-gray-50 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <span className="text-xs text-gray-500 font-medium">
+                        Menampilkan {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, documents.length)} dari {documents.length} dokumen
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                        >
+                            Sebelumnya
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-semibold text-gray-600 disabled:opacity-50 hover:bg-gray-50 transition-colors"
+                        >
+                            Selanjutnya
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
