@@ -64,20 +64,27 @@ const DashboardSidebar = ({ user, logout, sidebarOpen, setSidebarOpen, onCreateD
                         </button>
 
                         {showCreateDropdown && sidebarOpen && (
-                            <div className="mt-1 ml-3 pl-3 border-l-2 border-violet-100 space-y-0.5">
+                            <div className="mt-1 ml-7 flex flex-col">
                                 {[
                                     { type: 'nota', label: 'Nota Dinas', icon: <FileText size={14} />, color: 'text-violet-600' },
                                     { type: 'sppd', label: 'SPPD', icon: <FileText size={14} />, color: 'text-emerald-600' },
                                     { type: 'perj', label: 'Perjanjian (PKS)', icon: <FileSignature size={14} />, color: 'text-orange-500' },
-                                ].map(({ type, label, icon, color }) => (
-                                    <button
-                                        key={type}
-                                        onClick={() => { onCreateDoc(type); setShowCreateDropdown(false); }}
-                                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors group"
-                                    >
-                                        <span className={`${color} group-hover:scale-110 transition-transform`}>{icon}</span>
-                                        {label}
-                                    </button>
+                                ].map(({ type, label, icon, color }, i, arr) => (
+                                    <div key={type} className="relative flex pl-5 py-0.5">
+                                        {/* L-curve: left border from top to midpoint, then curves right */}
+                                        <div className="absolute left-0 top-0 h-1/2 w-5 border-l-2 border-b-2 border-violet-200 rounded-bl-xl" aria-hidden="true" />
+                                        {/* Vertical line from midpoint to bottom, connecting to next item */}
+                                        {i < arr.length - 1 && (
+                                            <div className="absolute left-0 top-1/2 bottom-0 w-0.5 bg-violet-200" aria-hidden="true" />
+                                        )}
+                                        <button
+                                            onClick={() => { onCreateDoc(type); setShowCreateDropdown(false); }}
+                                            className="flex-1 flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors group"
+                                        >
+                                            <span className={`${color} group-hover:scale-110 transition-transform`}>{icon}</span>
+                                            {label}
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         )}
