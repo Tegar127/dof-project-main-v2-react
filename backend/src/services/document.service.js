@@ -2,6 +2,7 @@ import * as documentRepository from '../repositories/document.repository.js';
 import * as notificationService from './notification.service.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
 import prisma from '../config/database.js';
+import { canSendDocument } from '../utils/roleUtils.js';
 
 // Human-readable labels for content_data fields
 const FIELD_LABELS = {
@@ -270,6 +271,15 @@ export const updateDocument = async (id, user, data) => {
 
     if (updateData.status && updateData.status !== oldStatus) {
         if (updateData.status === 'sent') {
+            // ── Jabatan-based sending restriction ─────────────────────────────
+            const sendTarget = updateData.target_role || document.target_role;
+            const sendValue  = updateData.target_value || document.target_value;
+            const { allowed, reason } = canSendDocument(user, sendTarget, sendValue);
+            if (!allowed) {
+                throw new ForbiddenError(reason || 'Anda tidak diizinkan mengirim dokumen ke divisi lain.');
+            }
+            // ──────────────────────────────────────────────────────────────────
+
             if (oldStatus === 'draft' || oldStatus === 'needs_revision') {
                 action = 'sent';
                 notes = 'Dokumen dikirim ke ' + (updateData.target_value || document.target_value);

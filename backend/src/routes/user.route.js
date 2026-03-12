@@ -12,6 +12,10 @@ router.use(requireAuth);
 router.get('/', userController.getAllUsers);
 router.get('/:id', userController.getUser);
 
+// Authenticated users can see which groups they're allowed to send to
+// (based on jabatan: admin/kadiv → all groups; staff/kabid → own group only)
+router.get('/me/available-groups', userController.getAvailableGroups);
+
 // Authenticated users can update their own profile (password)
 router.put('/profile/update', validate(updateUserSchema), userController.updateProfile);
 

@@ -106,14 +106,21 @@ function ConfirmModal({ title, message, onConfirm, onClose }) {
 }
 
 /** SendModal — blade lines 117-165 */
-function SendModal({ groups, onClose, onConfirm }) {
+function SendModal({ groups, user, onClose, onConfirm }) {
     const [targetRole, setTargetRole] = useState('');
     const [targetValue, setTargetValue] = useState('');
     const [error, setError] = useState('');
 
+    // Determine jabatan restriction context
+    const position = (user?.position || '').toLowerCase();
+    const isKadiv = position.startsWith('kadiv');
+    const isAdmin = user?.role === 'admin';
+    const canSendCrossDivision = isAdmin || isKadiv;
+    const userGroup = user?.group_name;
+
     const submit = () => {
         if (!targetRole) return setError('Pilih tujuan pengiriman!');
-        if (targetRole === 'group' && !targetValue) return setError('Pilih group tujuan!');
+        if (targetRole === 'group' && !targetValue) return setError('Pilih divisi tujuan!');
         onConfirm(targetRole, targetValue);
     };
 
@@ -129,6 +136,20 @@ function SendModal({ groups, onClose, onConfirm }) {
                         <p className="text-xs text-slate-500 font-medium">Pilih tujuan pengiriman dokumen ini.</p>
                     </div>
                 </div>
+
+                {/* Restriction notice for Staff / Kabid */}
+                {!canSendCrossDivision && userGroup && (
+                    <div className="mb-5 flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl">
+                        <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        <div>
+                            <p className="text-xs font-black text-amber-700 uppercase tracking-wide">Pengiriman Terbatas</p>
+                            <p className="text-xs text-amber-600 mt-0.5">
+                                Sebagai <span className="font-bold">{user?.position || 'Staff'}</span>, Anda hanya dapat mengirim dokumen ke divisi Anda sendiri: <span className="font-bold">{userGroup}</span>.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 <div className="space-y-4">
                     {/* Group / Divisi */}
                     <label className={`flex items-center gap-4 p-4 border-2 rounded-2xl cursor-pointer transition-all hover:bg-slate-50 ${targetRole === 'group' ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-100'}`}>
@@ -137,16 +158,24 @@ function SendModal({ groups, onClose, onConfirm }) {
                             className="w-5 h-5 text-indigo-600 accent-indigo-600" />
                         <div className="flex-1">
                             <span className="block text-sm font-black text-slate-800 uppercase tracking-tight">Group / Divisi</span>
-                            <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Kirim ke divisi terkait untuk diproses.</span>
+                            <span className="block text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">
+                                {canSendCrossDivision
+                                    ? 'Kirim ke divisi mana saja.'
+                                    : `Hanya divisi ${userGroup || 'Anda'}.`}
+                            </span>
                         </div>
                     </label>
                     {targetRole === 'group' && (
                         <div className="pl-4 border-l-4 border-indigo-100 ml-2 space-y-2">
-                            <select value={targetValue} onChange={e => setTargetValue(e.target.value)}
-                                className="w-full p-3.5 border-2 border-slate-100 rounded-xl text-sm font-bold bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all">
-                                <option value="">-- Pilih Group Tujuan --</option>
-                                {groups.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
-                            </select>
+                            {groups.length === 0 ? (
+                                <p className="text-xs text-slate-400 font-medium p-2">Tidak ada divisi yang tersedia.</p>
+                            ) : (
+                                <select value={targetValue} onChange={e => setTargetValue(e.target.value)}
+                                    className="w-full p-3.5 border-2 border-slate-100 rounded-xl text-sm font-bold bg-white focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all">
+                                    <option value="">-- Pilih Group Tujuan --</option>
+                                    {groups.map(g => <option key={g.id} value={g.name}>{g.name}</option>)}
+                                </select>
+                            )}
                         </div>
                     )}
                     {/* Disposisi */}
@@ -172,6 +201,7 @@ function SendModal({ groups, onClose, onConfirm }) {
         </div>
     );
 }
+
 
 /** HistoryModal — blade lines 21-85: Status Log + Work Log tabs */
 function HistoryModal({ docId, onClose }) {
@@ -422,9 +452,17 @@ const DocumentEditor = () => {
 
         const loadGroups = async () => {
             try {
-                const res = await api.get('/groups');
+                // Fetch only groups the current user is allowed to send to:
+                // Admin/Kadiv → all groups; Staff/Kabid → own division only
+                const res = await api.get('/users/me/available-groups');
                 setGroups(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
-            } catch { /* non-critical */ }
+            } catch {
+                // Fallback: fetch all groups (non-critical)
+                try {
+                    const res = await api.get('/groups');
+                    setGroups(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
+                } catch { /* ignore */ }
+            }
         };
 
         load();
@@ -555,7 +593,8 @@ const DocumentEditor = () => {
             {successMsg && <SuccessModal message={successMsg} onClose={() => setSuccessMsg('')} />}
             {errorMsg && <ErrorModal message={errorMsg} onClose={() => setErrorMsg('')} />}
             {confirm && <ConfirmModal title={confirm.title} message={confirm.message} onConfirm={confirm.onConfirm} onClose={() => setConfirm(null)} />}
-            {showSendModal && <SendModal groups={groups} onClose={() => setShowSendModal(false)} onConfirm={confirmSend} />}
+            {showSendModal && <SendModal groups={groups} user={user} onClose={() => setShowSendModal(false)} onConfirm={confirmSend} />}
+
             {showHistory && <HistoryModal docId={id} onClose={() => setShowHistory(false)} />}
 
             {/* ── Floating open button (collapsed) ──────────── */}

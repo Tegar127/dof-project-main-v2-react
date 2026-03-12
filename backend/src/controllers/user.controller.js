@@ -6,8 +6,6 @@ import bcrypt from 'bcryptjs';
 
 export const getAllUsers = catchAsync(async (req, res) => {
     const users = await userService.getAllUsers();
-    // Matching Laravel format which directly returns JSON array for index, or keep it wrapped.
-    // We'll return it directly to match `return response()->json($users);` in Laravel
     return res.status(200).json(users);
 });
 
@@ -18,7 +16,6 @@ export const createUser = catchAsync(async (req, res) => {
 
 export const getUser = catchAsync(async (req, res) => {
     const user = await userService.getUserById(req.params.id);
-    // Match `return response()->json($user->load('groups'));`
     return res.status(200).json(user);
 });
 
@@ -28,7 +25,6 @@ export const updateUser = catchAsync(async (req, res) => {
 });
 
 export const updateProfile = catchAsync(async (req, res) => {
-    // Only allow updating password or certain non-role fields
     const { currentPassword, password } = req.body;
     let updateData = {};
 
@@ -62,4 +58,27 @@ export const updateProfile = catchAsync(async (req, res) => {
 export const deleteUser = catchAsync(async (req, res) => {
     await userService.deleteUser(req.params.id);
     return sendSuccess(res, 200, 'User deleted successfully');
+});
+
+/**
+ * GET /api/users/available-groups
+ *
+ * Returns the list of groups the current user is ALLOWED to send a document to,
+ * based on jabatan (position):
+ *  - Admin / Kadiv → all groups
+ *  - Staff / Kabid  → only their own group
+ */
+export const getAvailableGroups = catchAsync(async (req, res) => {
+    const { getAllowedGroupNames } = await import('../utils/roleUtils.js');
+    const prisma = (await import('../config/database.js')).default;
+
+    const allGroups = await prisma.group.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: 'asc' },
+    });
+
+    const allowedNames = getAllowedGroupNames(req.user, allGroups.map(g => g.name));
+    const filtered = allGroups.filter(g => allowedNames.includes(g.name));
+
+    return res.status(200).json(filtered);
 });
