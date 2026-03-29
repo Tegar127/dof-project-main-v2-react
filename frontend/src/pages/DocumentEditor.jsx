@@ -377,7 +377,7 @@ const DocumentEditor = () => {
         const endTime = new Date().toISOString();
         const payload = JSON.stringify({ start_time: startTime, end_time: endTime });
         const token = localStorage.getItem('token');
-        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
         fetch(`${baseUrl}/documents/${id}/work-logs`, {
             method: 'POST',
