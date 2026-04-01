@@ -20,6 +20,11 @@ export const findAllForUser = async (user, filters = {}) => {
                 WHERE da.document_id = d.id
                 AND (da.approver_id = $${idx} OR da.approver_position = $${idx + 1})
             )
+            OR EXISTS (
+                SELECT 1 FROM document_logs dl
+                WHERE dl.document_id = d.id
+                AND dl.user_id = $${idx}
+            )
         )`);
         values.push(user.id, user.position || '');
         idx += 2;
@@ -47,6 +52,11 @@ export const findAllForUser = async (user, filters = {}) => {
                         AND g.name = $${idx + 3}
                     ))
                 )
+            )
+            OR EXISTS (
+                SELECT 1 FROM document_logs dl
+                WHERE dl.document_id = d.id
+                AND dl.user_id = $${idx}
             )
         )`);
         values.push(user.id, user.email || '', user.position || '', userGroup, String(user.id));
@@ -127,7 +137,7 @@ export const destroy = async (id) => {
 export const getLogs = async (documentId) => {
     return await prisma.documentLog.findMany({
         where: { document_id: Number(documentId) },
-        include: { user: { select: { name: true } } },
+        include: { user: { select: { name: true, position: true } } },
         orderBy: [{ created_at: 'desc' }, { id: 'desc' }]
     });
 };

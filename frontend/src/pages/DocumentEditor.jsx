@@ -273,9 +273,12 @@ function HistoryModal({ docId, onClose }) {
                                                 <p className="text-xs text-blue-700 whitespace-pre-line font-mono">{log.changes_summary}</p>
                                             </div>
                                         )}
-                                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-50">
-                                            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600">{log.user_name?.charAt(0)}</div>
-                                            <span className="text-xs font-bold text-slate-500">{log.user_name || '-'}</span>
+                                        <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-50 flex-wrap">
+                                            <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600 shrink-0">{log.user?.name?.charAt(0) || '-'}</div>
+                                            <span className="text-xs font-bold text-slate-800">{log.user?.name || '-'}</span>
+                                            {log.user?.position && (
+                                                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase tracking-wider">{log.user.position}</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
