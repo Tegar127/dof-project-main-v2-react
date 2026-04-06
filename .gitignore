@@ -52,3 +52,5 @@ public/hot/
 public/build/
 storage/*.key
 storage/pail/
+
+/generated/prisma
