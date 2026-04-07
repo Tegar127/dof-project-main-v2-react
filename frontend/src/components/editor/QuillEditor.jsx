@@ -129,7 +129,10 @@ const QuillEditor = ({
     }, [readOnly]);
 
     return (
-        <div className="quill-wrapper" style={{ '--quill-min-height': minHeight }}>
+        <div
+            className={`quill-wrapper${readOnly ? ' ql-readonly' : ''}`}
+            style={{ '--quill-min-height': minHeight }}
+        >
             <div ref={containerRef} />
         </div>
     );

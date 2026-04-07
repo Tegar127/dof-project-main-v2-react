@@ -672,7 +672,7 @@ const DocumentEditor = () => {
                         <div className="p-8 space-y-10">
                             {/* Form fields — disabled by fieldset if not editable */}
                             <fieldset disabled={!canEdit} className="space-y-10">
-                                {docType === 'nota' && <NotaEditor formData={formData} setFormData={setFormData} />}
+                                {docType === 'nota' && <NotaEditor formData={formData} setFormData={setFormData} readOnly={!canEdit} />}
                                 {docType === 'sppd' && <SppdEditor formData={formData} setFormData={setFormData} />}
                                 {docType === 'perj' && <PerjanjianEditor formData={formData} setFormData={setFormData} />}
                             </fieldset>

@@ -20,7 +20,7 @@ function SectionHeading({ number, title }) {
     );
 }
 
-const NotaEditor = ({ formData, setFormData }) => {
+const NotaEditor = ({ formData, setFormData, readOnly = false }) => {
     const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' });
     const setField = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 
@@ -181,12 +181,26 @@ const NotaEditor = ({ formData, setFormData }) => {
             {/* === 3. ISI KONTEN UTAMA === */}
             <div className="space-y-4 pt-4">
                 <SectionHeading number="3" title="Isi Konten Utama" />
+
+                {/* Banner: Terkunci */}
+                {readOnly && (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">
+                            Editor terkunci — dokumen sudah didistribusikan
+                        </p>
+                    </div>
+                )}
+
                 <div className="quill-main-wrap">
                     <QuillEditor
                         value={formData.content || ''}
                         onChange={(html) => setField('content', html)}
                         placeholder="Tulis isi nota dinas di sini — gunakan toolbar untuk format teks, daftar bernomor, poin, dll..."
                         minHeight="320px"
+                        readOnly={readOnly}
                         toolbar={[
                             [{ header: [1, 2, 3, false] }],
                             ['bold', 'italic', 'underline', 'strike'],
