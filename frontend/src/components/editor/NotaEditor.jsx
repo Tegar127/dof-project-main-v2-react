@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import SignatureModal from './SignatureModal';
+import QuillEditor from './QuillEditor';
 
 // ===========================================================
 // NOTA EDITOR — matches editor/index.blade.php sidebar
@@ -180,154 +179,24 @@ const NotaEditor = ({ formData, setFormData }) => {
             </div>
 
             {/* === 3. ISI KONTEN UTAMA === */}
-            <div className="space-y-6 pt-4">
+            <div className="space-y-4 pt-4">
                 <SectionHeading number="3" title="Isi Konten Utama" />
-
-                {/* Dasar Pelaksanaan (Basis) */}
-                <div className="space-y-4">
-                    <div className="flex justify-between items-end">
-                        <div>
-                            <label className="form-label-styled">Dasar Pelaksanaan</label>
-                            <select
-                                value={formData.basisStyle || '1.'}
-                                onChange={(e) => setField('basisStyle', e.target.value)}
-                                className="text-[9px] font-bold border-slate-200 rounded bg-slate-50 px-2 py-1 focus:ring-0 outline-none"
-                            >
-                                <option value="1.">ANGKA (1, 2, 3)</option>
-                                <option value="a.">HURUF KECIL (a, b, c)</option>
-                                <option value="A.">HURUF BESAR (A, B, C)</option>
-                                <option value="I.">ROMAWI (I, II, III)</option>
-                            </select>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={addBasis}
-                            className="text-[10px] text-indigo-600 font-black hover:underline tracking-tighter uppercase"
-                        >+ TAMBAH POIN</button>
-                    </div>
-                    <div className="space-y-3">
-                        {basisList.map((item, i) => {
-                            const bi = typeof item === 'string' ? { text: item, sub: [] } : item;
-                            return (
-                                <div key={i} className="space-y-2 p-3 bg-slate-50 rounded-xl border border-slate-100 group/basis">
-                                    <div className="flex gap-3 items-center">
-                                        <div className="flex-1 relative">
-                                            <input
-                                                type="text"
-                                                value={bi.text}
-                                                onChange={(e) => changeBasis(i, e.target.value)}
-                                                className="form-input-styled text-sm py-2 bg-white"
-                                                placeholder="Tulis poin dasar..."
-                                            />
-                                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-300 rounded-l-lg group-focus-within/basis:bg-indigo-500 transition-colors"></div>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            <button
-                                                type="button"
-                                                onClick={() => addSub(i)}
-                                                className="p-2 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
-                                                title="Tambah Sub-poin"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeBasis(i)}
-                                                className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    {/* Sub-items */}
-                                    {bi.sub && bi.sub.length > 0 && (
-                                        <div className="ml-4 space-y-1">
-                                            {bi.sub.map((sub, si) => (
-                                                <div key={si} className="flex gap-2 items-center">
-                                                    <span className="text-xs text-slate-400 w-5">{String.fromCharCode(97 + si)}.</span>
-                                                    <input
-                                                        type="text"
-                                                        value={sub}
-                                                        onChange={(e) => changeSub(i, si, e.target.value)}
-                                                        className="flex-1 py-1.5 px-3 bg-white border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 outline-none transition-all"
-                                                        placeholder={`Sub-poin ${si + 1}...`}
-                                                    />
-                                                    <button type="button" onClick={() => removeSub(i, si)} className="p-1 text-slate-300 hover:text-red-500 transition-all">
-                                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* CKEditor — Konten Utama */}
-                <div className="space-y-2 group">
-                    <label className="form-label-styled group-focus-within:text-indigo-500 transition-colors">Konten Utama (Editor)</label>
-                    <div className="ck-editor-container border border-slate-200 rounded-2xl overflow-hidden focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-50 transition-all">
-                        <CKEditor
-                            editor={ClassicEditor}
-                            config={{
-                                toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote', 'undo', 'redo'],
-                            }}
-                            data={formData.content || ''}
-                            onChange={(event, editor) => setField('content', editor.getData())}
-                        />
-                    </div>
-                </div>
-
-                {/* Kalimat Penutup */}
-                <div className="group">
-                    <label className="form-label-styled group-focus-within:text-indigo-500 transition-colors">Kalimat Penutup</label>
-                    <textarea
-                        value={formData.closing || ''}
-                        onChange={(e) => setField('closing', e.target.value)}
-                        className="form-textarea-styled leading-relaxed"
-                        rows="2"
-                    ></textarea>
-                </div>
-
-                {/* Tembusan */}
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <label className="form-label-styled">Tembusan (Opsional)</label>
-                        <button
-                            type="button"
-                            onClick={addCc}
-                            className="text-[10px] text-indigo-600 font-black hover:underline uppercase tracking-tighter"
-                        >+ TAMBAH TEMBUSAN</button>
-                    </div>
-                    <div className="space-y-2">
-                        {ccList.map((cc, i) => (
-                            <div key={i} className="flex gap-2 items-center group/cc">
-                                <div className="flex-1 relative">
-                                    <input
-                                        type="text"
-                                        value={cc}
-                                        onChange={(e) => changeCc(i, e.target.value)}
-                                        className="form-input-styled py-2 text-sm bg-white"
-                                        placeholder="Contoh: Direksi PT ASABRI"
-                                    />
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-slate-300 rounded-l-lg group-focus-within/cc:bg-indigo-500 transition-colors"></div>
-                                </div>
-                                <button type="button" onClick={() => removeCc(i)} className="p-2 text-slate-300 hover:text-red-500 transition-all">
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                <div className="quill-main-wrap">
+                    <QuillEditor
+                        value={formData.content || ''}
+                        onChange={(html) => setField('content', html)}
+                        placeholder="Tulis isi nota dinas di sini — gunakan toolbar untuk format teks, daftar bernomor, poin, dll..."
+                        minHeight="320px"
+                        toolbar={[
+                            [{ header: [1, 2, 3, false] }],
+                            ['bold', 'italic', 'underline', 'strike'],
+                            [{ list: 'ordered' }, { list: 'bullet' }],
+                            [{ indent: '-1' }, { indent: '+1' }],
+                            [{ align: [] }],
+                            ['link', 'blockquote'],
+                            ['clean'],
+                        ]}
+                    />
                 </div>
             </div>
 
@@ -564,38 +433,11 @@ NotaEditor.Preview = function NotaEditorPreview({ formData }) {
                 </tbody>
             </table>
 
-            <div className="mb-4">
-                <p className="mb-2">Berdasarkan:</p>
-                <ul className="list-none text-justify p-0 m-0">
-                    {basisList.map((item, i) => {
-                        const bi = typeof item === 'string' ? { text: item, sub: [] } : item;
-                        return (
-                            <li key={i} className="mb-4">
-                                <div className="flex gap-2 items-start">
-                                    <span className="w-8 shrink-0 font-bold text-center">{formatNumbering(i, formData?.basisStyle || '1.')}</span>
-                                    <span className="flex-1 break-words">{bi.text}</span>
-                                </div>
-                                {bi.sub && bi.sub.length > 0 && (
-                                    <ul className="list-none mt-1 ml-8 space-y-1">
-                                        {bi.sub.map((sub, si) => (
-                                            <li key={si} className="flex gap-2 items-start text-sm">
-                                                <span className="w-6 shrink-0">{String.fromCharCode(97 + si)}.</span>
-                                                <span className="flex-1 break-words text-justify">{sub}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </li>
-                        );
-                    })}
-                </ul>
-            </div>
 
-            <div className="mb-8 text-justify leading-relaxed">
+            <div className="mb-8 text-justify leading-relaxed quill-preview-content">
                 <div dangerouslySetInnerHTML={{ __html: formData?.content || '...' }} />
             </div>
 
-            <p className="mb-8 font-medium">{formData?.closing || 'Demikian disampaikan dan untuk dijadikan periksa.'}</p>
 
             <div className="signature-section">
                 <p className="mb-1">
