@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SignatureModal from './SignatureModal';
 import QuillEditor from './QuillEditor';
+import api from '../../utils/api';
 
 // ===========================================================
 // NOTA EDITOR — matches editor/index.blade.php sidebar
@@ -20,8 +21,181 @@ function SectionHeading({ number, title }) {
     );
 }
 
+// ─── Modal Ubah Nomor Surat ──────────────────────────────────────────────────
+// Nomor tidak bisa diedit langsung. Perubahan WAJIB disertai alasan yang akan
+// tercatat di log riwayat dokumen.
+function GenerateNumberModal({ currentNumber, onClose, onGenerate }) {
+    const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+    const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+
+    const [classification, setClassification] = useState('PR.04.01');
+    const [unit, setUnit] = useState('E');
+    const [selectedDate, setSelectedDate] = useState(todayStr);
+    const [reason, setReason] = useState('');
+    const [generating, setGenerating] = useState(false);
+    const [error, setError] = useState('');
+
+    const buildPreview = (cls, unt, dateStr) => {
+        const d = dateStr ? new Date(dateStr) : new Date();
+        const roman = ROMAN[d.getMonth()];
+        const yr = d.getFullYear();
+        return `ND-???/${(cls||'PR.04.01').toUpperCase()}/${(unt||'E').toUpperCase()}/${roman}/${yr}`;
+    };
+
+    const handleConfirm = async () => {
+        if (!reason.trim()) {
+            setError('Alasan perubahan nomor wajib diisi!');
+            return;
+        }
+        setGenerating(true);
+        setError('');
+        try {
+            const res = await api.get('/documents/generate-number', {
+                params: { type: 'nota', classification, unit, date: selectedDate }
+            });
+            const newNumber = res.data?.data?.docNumber || res.data?.docNumber;
+            if (!newNumber) throw new Error('Response tidak valid dari server');
+            onGenerate({ number: newNumber, reason: reason.trim() });
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Gagal memperbarui nomor.');
+        } finally {
+            setGenerating(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
+                {/* Header */}
+                <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-slate-800 tracking-tight">Ubah Nomor Surat</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">Perubahan akan dicatat dalam log riwayat dokumen.</p>
+                    </div>
+                </div>
+
+                {/* Nomor saat ini */}
+                {currentNumber && (
+                    <div className="mb-5 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl">
+                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Nomor Saat Ini</p>
+                        <p className="font-mono font-bold text-slate-700 text-sm">{currentNumber}</p>
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {/* Row: Klasifikasi + Unit */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest">Kode Klasifikasi</label>
+                            <input type="text" value={classification}
+                                onChange={e => setClassification(e.target.value)}
+                                placeholder="PR.04.01"
+                                className="w-full px-3 py-2.5 border-2 border-slate-100 rounded-xl text-sm font-bold bg-slate-50 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all font-mono"
+                            />
+                            <p className="text-[9px] text-slate-400 font-bold">Contoh: PR.04.01</p>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest">Kode Unit</label>
+                            <input type="text" value={unit}
+                                onChange={e => setUnit(e.target.value)}
+                                placeholder="E"
+                                className="w-full px-3 py-2.5 border-2 border-slate-100 rounded-xl text-sm font-bold bg-slate-50 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all font-mono"
+                            />
+                            <p className="text-[9px] text-slate-400 font-bold">Contoh: A · B · E</p>
+                        </div>
+                    </div>
+
+                    {/* Tanggal Surat */}
+                    <div className="space-y-1.5">
+                        <label className="block text-[10px] font-black text-slate-700 uppercase tracking-widest flex items-center gap-1">
+                            <svg className="w-3 h-3 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Tanggal Surat
+                        </label>
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={e => setSelectedDate(e.target.value)}
+                            className="w-full px-4 py-2.5 border-2 border-slate-100 rounded-xl text-sm font-bold bg-slate-50 focus:ring-4 focus:ring-indigo-50 focus:border-indigo-500 outline-none transition-all"
+                        />
+                        <p className="text-[9px] text-slate-400 font-bold">Bulan & tahun dari tanggal ini akan digunakan dalam nomor surat</p>
+                    </div>
+
+                    {/* Preview Dinamis */}
+                    <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 rounded-2xl">
+                        <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest mb-1">Preview Format</p>
+                        <p className="font-mono font-bold text-indigo-800 text-sm tracking-wide">{buildPreview(classification, unit, selectedDate)}</p>
+                        <p className="text-[9px] text-indigo-400 mt-1">??? = nomor urut di-generate dari server berdasarkan tahun yang dipilih</p>
+                    </div>
+
+                    {/* Alasan Perubahan (wajib) */}
+                    <div className="space-y-1.5 pt-1">
+                        <label className="block text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            Alasan Perubahan <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            value={reason}
+                            onChange={e => { setReason(e.target.value); setError(''); }}
+                            rows={3}
+                            placeholder="Jelaskan alasan perubahan nomor surat ini... (wajib diisi, akan tercatat di log)"
+                            className={`w-full px-4 py-3 border-2 rounded-xl text-sm font-medium bg-white focus:ring-4 focus:ring-amber-50 outline-none transition-all resize-none ${!reason.trim() && error ? 'border-red-400 focus:border-red-400' : 'border-amber-100 focus:border-amber-400'}`}
+                        />
+                    </div>
+
+                    {error && (
+                        <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+                            <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-xs text-red-600 font-bold">{error}</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 mt-7">
+                    <button onClick={onClose}
+                        className="flex-1 py-3.5 text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">
+                        Batal
+                    </button>
+                    <button onClick={handleConfirm} disabled={generating}
+                        className="flex-1 py-3.5 bg-amber-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-100 flex items-center justify-center gap-2 disabled:opacity-60">
+                        {generating ? (
+                            <>
+                                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                <span>Menyimpan...</span>
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>Simpan Perubahan</span>
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── NotaEditor ──────────────────────────────────────────────────────────────
 const NotaEditor = ({ formData, setFormData, readOnly = false }) => {
     const [sigModal, setSigModal] = useState({ isOpen: false, target: null, title: '' });
+    const [showGenModal, setShowGenModal] = useState(false);
     const setField = (key, val) => setFormData(prev => ({ ...prev, [key]: val }));
 
     // ---- Basis  ----
@@ -81,18 +255,73 @@ const NotaEditor = ({ formData, setFormData, readOnly = false }) => {
                 <SectionHeading number="1" title="Identitas & Pertimbangan" />
                 <div className="space-y-5">
                     {/* Nomor Dokumen */}
-                    <div className="group">
-                        <label className="form-label-styled group-focus-within:text-indigo-500 transition-colors">Nomor Dokumen</label>
-                        <input
-                            type="text"
-                            value={formData.docNumber || ''}
-                            onChange={(e) => setField('docNumber', e.target.value)}
-                            className="form-input-styled font-mono text-base"
-                            placeholder=".../ND/I/2026"
-                        />
+                    <div className="group space-y-2">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <label className="form-label-styled">Nomor Dokumen</label>
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-600 rounded-md text-[8px] font-black uppercase tracking-widest">
+                                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Otomatis
+                                </span>
+                            </div>
+                            {!readOnly && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowGenModal(true)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 hover:bg-indigo-600 text-slate-500 hover:text-white border border-slate-200 hover:border-indigo-600 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all"
+                                    title="Ubah nomor surat"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Ubah
+                                </button>
+                            )}
+                        </div>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={formData.docNumber || ''}
+                                onChange={(e) => setField('docNumber', e.target.value)}
+                                className="form-input-styled font-mono text-base pr-10"
+                                placeholder="Nomor akan di-generate otomatis..."
+                                readOnly={readOnly}
+                            />
+                            {formData.docNumber && (
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                                    <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-[9px] text-slate-400 font-bold flex items-center gap-1">
+                            <svg className="w-3 h-3 text-indigo-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Nomor digenerate otomatis saat dokumen dibuat · Klik "Ubah" untuk menyesuaikan kode
+                        </p>
                     </div>
                 </div>
             </div>
+
+            {/* Modal Ubah Nomor */}
+            {showGenModal && (
+                <GenerateNumberModal
+                    currentNumber={formData.docNumber}
+                    onClose={() => setShowGenModal(false)}
+                    onGenerate={({ number, reason }) => {
+                        setFormData(prev => ({
+                            ...prev,
+                            docNumber: number,
+                            _docChangeNote: `Perubahan nomor surat: ${reason}`
+                        }));
+                        setShowGenModal(false);
+                    }}
+                />
+            )}
 
             {/* === 2. PENERIMA & INSTRUKSI === */}
             <div className="space-y-6 pt-4">

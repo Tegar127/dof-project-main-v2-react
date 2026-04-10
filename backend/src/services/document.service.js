@@ -42,9 +42,14 @@ const generateChangeSummary = (oldData = {}, newData = {}) => {
             let newDisplay = formatFieldValue(newVal, key);
             if (oldDisplay.length > 100) oldDisplay = oldDisplay.substring(0, 100) + '...';
             if (newDisplay.length > 100) newDisplay = newDisplay.substring(0, 100) + '...';
-            if (oldDisplay && newDisplay) changes.push(`• ${label}: "${oldDisplay}" → "${newDisplay}"`);
-            else if (newDisplay) changes.push(`• ${label} diisi: "${newDisplay}"`);
-            else if (oldDisplay) changes.push(`• ${label} dihapus`);
+            if (oldDisplay !== newDisplay) {
+                if (oldDisplay && newDisplay) changes.push(`• ${label}: "${oldDisplay}" → "${newDisplay}"`);
+                else if (newDisplay) changes.push(`• ${label} ditambahkan/diisi: "${newDisplay}"`);
+                else if (oldDisplay) changes.push(`• ${label} dihapus/dikosongkan`);
+            } else {
+                if (oldDisplay) changes.push(`• ${label} diperbarui`);
+                else changes.push(`• ${label} diubah struktur formatnya`);
+            }
         }
     }
     return changes.length > 0 ? changes.join('\n') : null;
@@ -93,6 +98,34 @@ export const getAllDocuments = async (user, filters) => {
     return documents;
 };
 
+// ─── Helper: generate nomor surat otomatis ────────────────────────────────────
+const ROMAN_MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+const DOC_PREFIXES = { nota: 'ND', sppd: 'SPPD', perj: 'PKS' };
+
+const generateDocNumber = async (type) => {
+    // Hanya generate untuk tipe yang dikenal
+    const prefix = DOC_PREFIXES[type];
+    if (!prefix) return null;
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const startOfYear = new Date(year, 0, 1);
+    const startOfNextYear = new Date(year + 1, 0, 1);
+
+    // Hitung jumlah dokumen sejenis pada tahun berjalan (termasuk yang baru dibuat)
+    const count = await prisma.document.count({
+        where: {
+            type,
+            created_at: { gte: startOfYear, lt: startOfNextYear },
+        },
+    });
+
+    const seq = count + 1;
+    const roman = ROMAN_MONTHS[now.getMonth()];
+
+    return `${prefix}-${seq}/PR.04.01/E/${roman}/${year}`;
+};
+
 export const createDocument = async (user, data) => {
     const contentData = data.content_data || {};
     if (!contentData.to) contentData.to = [''];
@@ -100,6 +133,12 @@ export const createDocument = async (user, data) => {
     if (!contentData.signerName) contentData.signerName = user.name;
     if (!contentData.signerPosition) contentData.signerPosition = (user.position || '').toUpperCase();
     if (!contentData.paraf) contentData.paraf = [{ code: '', name: '', signature: '' }];
+
+    // ── Auto-generate nomor surat jika belum ada ──────────────────────────────
+    if (!contentData.docNumber) {
+        const autoNumber = await generateDocNumber(data.type);
+        if (autoNumber) contentData.docNumber = autoNumber;
+    }
 
     const documentData = {
         title: data.title,
@@ -215,6 +254,7 @@ export const updateDocument = async (id, user, data) => {
     const updateData = {};
     const oldStatus = document.status;
 
+    if (data.title !== undefined) updateData.title = data.title;
     if (data.status !== undefined) updateData.status = data.status;
     if (data.content_data !== undefined) updateData.content_data = data.content_data;
     if (data.history_log !== undefined) updateData.history_log = data.history_log;
@@ -226,12 +266,19 @@ export const updateDocument = async (id, user, data) => {
 
     let shouldVersion = false;
     let changeSummary = null;
+    let changeNote = null; // Alasan spesifik dari user (misal: perubahan nomor surat)
     let newVersion = document.version;
 
     if (data.content_data || data.increment_version) {
         shouldVersion = true;
         if (data.content_data) {
-            changeSummary = 'Konten dokumen diperbarui';
+            // ── Cabut _docChangeNote ─────────────────────────────────────────
+            // Ini adalah catatan alasan perubahan nomor surat dari frontend.
+            // Digunakan sebagai detail log, lalu dihapus dari content_data.
+            changeNote = data.content_data._docChangeNote || null;
+            if (changeNote) delete data.content_data._docChangeNote;
+
+            changeSummary = changeNote || 'Konten dokumen diperbarui';
             if (!data.increment_version) { newVersion = incrementVersionString(document.version, false); updateData.version = newVersion; }
         } else { changeSummary = 'Versi baru manual.'; }
 
@@ -360,14 +407,14 @@ export const updateDocument = async (id, user, data) => {
     } else if (updateData.target_role) {
         notes = 'Tujuan dokumen diubah ke ' + (updateData.target_value || document.target_value);
     } else if (fieldChangeSummary) {
-        notes = 'Konten dokumen diperbarui';
+        notes = changeNote || 'Konten dokumen diperbarui';
     }
 
     await documentRepository.createLog({
         document_id: id,
         user_id: user.id,
         action,
-        details: notes,
+        details: changeNote && action === 'updated' ? changeNote : notes,
         old_status: (updateData.status && updateData.status !== oldStatus) ? oldStatus : null,
         new_status: (updateData.status && updateData.status !== oldStatus) ? updateData.status : null,
         changes_summary: fieldChangeSummary || (shouldVersion ? changeSummary : null)

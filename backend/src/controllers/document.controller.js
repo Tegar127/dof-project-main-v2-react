@@ -2,6 +2,7 @@ import * as documentService from '../services/document.service.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { sendSuccess } from '../utils/responses.js';
 import * as documentRepository from '../repositories/document.repository.js';
+import prisma from '../config/database.js';
 
 export const getAllDocuments = catchAsync(async (req, res) => {
     const documents = await documentService.getAllDocuments(req.user, req.query);
@@ -54,4 +55,53 @@ export const restoreVersion = catchAsync(async (req, res) => {
     // Optional: override the change summary to "Pulihkan dari vX.X"
 
     return sendSuccess(res, 200, 'Version restored successfully', { document });
+});
+
+/**
+ * Generate nomor surat nota dinas otomatis.
+ * Format: ND-{seq}/{kodeKlasifikasi}/{kodeUnit}/{bulanRomawi}/{tahun}
+ * Contoh: ND-194/PR.04.01/E/X/2025
+ *
+ * Query params:
+ *   type           : 'nota' (default) | 'sppd' | 'perj'
+ *   classification : kode klasifikasi (default: 'PR.04.01')
+ *   unit           : kode unit          (default: 'E')
+ */
+export const generateDocumentNumber = catchAsync(async (req, res) => {
+    const type = req.query.type || 'nota';
+    const classification = (req.query.classification || 'PR.04.01').toUpperCase();
+    const unit = (req.query.unit || 'E').toUpperCase();
+
+    // Gunakan tanggal dari query param jika ada, fallback ke hari ini
+    const refDate = req.query.date ? new Date(req.query.date) : new Date();
+    const year = refDate.getFullYear();
+    const month = refDate.getMonth(); // 0-indexed
+
+    // Angka Romawi untuk bulan
+    const ROMAN_MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+
+    // Hitung jumlah dokumen sejenis yang sudah ada di TAHUN yang dipilih
+    const startOfYear = new Date(year, 0, 1);
+    const startOfNextYear = new Date(year + 1, 0, 1);
+
+    const count = await prisma.document.count({
+        where: {
+            type: type,
+            created_at: {
+                gte: startOfYear,
+                lt: startOfNextYear,
+            },
+        },
+    });
+
+    const seq = count + 1;
+    const romanMonth = ROMAN_MONTHS[month];
+
+    // Prefix berdasarkan type
+    const prefixes = { nota: 'ND', sppd: 'SPPD', perj: 'PKS' };
+    const prefix = prefixes[type] || 'ND';
+
+    const docNumber = `${prefix}-${seq}/${classification}/${unit}/${romanMonth}/${year}`;
+
+    return sendSuccess(res, 200, 'Document number generated', { docNumber, seq, year, month: month + 1 });
 });

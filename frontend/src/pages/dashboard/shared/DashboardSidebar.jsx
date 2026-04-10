@@ -67,8 +67,8 @@ const DashboardSidebar = ({ user, logout, sidebarOpen, setSidebarOpen, onCreateD
                             <div className="mt-1 ml-7 flex flex-col">
                                 {[
                                     { type: 'nota', label: 'Nota Dinas', icon: <FileText size={14} />, color: 'text-violet-600' },
-                                    { type: 'sppd', label: 'SPPD', icon: <FileText size={14} />, color: 'text-emerald-600' },
-                                    { type: 'perj', label: 'Perjanjian (PKS)', icon: <FileSignature size={14} />, color: 'text-orange-500' },
+                                    // { type: 'sppd', label: 'SPPD', icon: <FileText size={14} />, color: 'text-emerald-600' },
+                                    // { type: 'perj', label: 'Perjanjian (PKS)', icon: <FileSignature size={14} />, color: 'text-orange-500' },
                                 ].map(({ type, label, icon, color }, i, arr) => (
                                     <div key={type} className="relative flex pl-5 py-0.5">
                                         {/* L-curve: left border from top to midpoint, then curves right */}

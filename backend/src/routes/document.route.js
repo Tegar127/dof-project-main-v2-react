@@ -18,6 +18,7 @@ router.use(requireAuth);
 // Core Document Routes
 router.get('/', documentController.getAllDocuments);
 router.post('/', documentController.createDocument);
+router.get('/generate-number', documentController.generateDocumentNumber);
 router.get('/:id', documentController.getDocument);
 router.put('/:id', documentController.updateDocument);
 router.delete('/:id', documentController.deleteDocument);
