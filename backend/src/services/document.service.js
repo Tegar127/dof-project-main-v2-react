@@ -2,7 +2,7 @@ import * as documentRepository from '../repositories/document.repository.js';
 import * as notificationService from './notification.service.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/errors.js';
 import prisma from '../config/database.js';
-import { canSendDocument } from '../utils/roleUtils.js';
+import { canSendDocument, requiresApproval } from '../utils/roleUtils.js';
 
 // Human-readable labels for content_data fields
 const FIELD_LABELS = {
@@ -98,32 +98,45 @@ export const getAllDocuments = async (user, filters) => {
     return documents;
 };
 
-// ─── Helper: generate nomor surat otomatis ────────────────────────────────────
+// ─── Konfigurasi format nomor surat ──────────────────────────────────────────
 const ROMAN_MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
 const DOC_PREFIXES = { nota: 'ND', sppd: 'SPPD', perj: 'PKS' };
 
-const generateDocNumber = async (type) => {
-    // Hanya generate untuk tipe yang dikenal
+/**
+ * Generate nomor surat secara sekuensial global.
+ * Urutan dihitung dari total seluruh dokumen sejenis (tidak reset per tahun).
+ *
+ * Format: {PREFIX}-{seq}/{classification}/{unit}/{bulanRomawi}/{tahun}
+ * Contoh: ND-12/PR.04.01/E/IV/2026
+ *
+ * @param {string} type            - Tipe dokumen: 'nota' | 'sppd' | 'perj'
+ * @param {string} [classification='PR.04.01'] - Kode klasifikasi
+ * @param {string} [unit='E']      - Kode unit
+ * @param {Date}   [refDate]       - Tanggal referensi (default: sekarang)
+ * @returns {Promise<string|null>} Nomor surat, atau null jika tipe tidak dikenal
+ */
+export const generateDocNumber = async (type, classification = 'PR.04.01', unit = 'E', refDate = new Date(), currentNumber = null) => {
     const prefix = DOC_PREFIXES[type];
     if (!prefix) return null;
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const startOfYear = new Date(year, 0, 1);
-    const startOfNextYear = new Date(year + 1, 0, 1);
+    let seq;
+    if (currentNumber) {
+        const match = currentNumber.match(new RegExp(`^${prefix}-([^/]+)/`));
+        if (match) {
+            seq = match[1];
+        }
+    }
 
-    // Hitung jumlah dokumen sejenis pada tahun berjalan (termasuk yang baru dibuat)
-    const count = await prisma.document.count({
-        where: {
-            type,
-            created_at: { gte: startOfYear, lt: startOfNextYear },
-        },
-    });
+    if (!seq) {
+        // Hitung total dokumen sejenis secara global (tanpa filter tahun)
+        const count = await prisma.document.count({ where: { type } });
+        seq = count + 1;
+    }
 
-    const seq = count + 1;
-    const roman = ROMAN_MONTHS[now.getMonth()];
+    const roman = ROMAN_MONTHS[refDate.getMonth()];
+    const year  = refDate.getFullYear();
 
-    return `${prefix}-${seq}/PR.04.01/E/${roman}/${year}`;
+    return `${prefix}-${seq}/${classification}/${unit}/${roman}/${year}`;
 };
 
 export const createDocument = async (user, data) => {
@@ -256,7 +269,17 @@ export const updateDocument = async (id, user, data) => {
 
     if (data.title !== undefined) updateData.title = data.title;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.content_data !== undefined) updateData.content_data = data.content_data;
+    if (data.content_data !== undefined) {
+        // Jika ada perubahan eksplisit melalui modal "Ubah Nomor", akan ada _docChangeNote
+        // Maka jangan tindih docNumber. Jika tidak ada, pakai yang sudah tersimpan agar tidak hilang.
+        const existingDocNumber = document.content_data?.docNumber;
+        const isExplicitChange = !!data.content_data._docChangeNote;
+        
+        if (existingDocNumber && !isExplicitChange) {
+            data.content_data.docNumber = existingDocNumber;
+        }
+        updateData.content_data = data.content_data;
+    }
     if (data.history_log !== undefined) updateData.history_log = data.history_log;
     if (data.feedback !== undefined) updateData.feedback = data.feedback;
     if (data.forward_note !== undefined) updateData.forward_note = data.forward_note;
@@ -331,8 +354,10 @@ export const updateDocument = async (id, user, data) => {
                 action = 'sent';
                 notes = 'Dokumen dikirim ke ' + (updateData.target_value || document.target_value);
 
-                // Notify reviewers if sent to dispo
-                if (updateData.target_role === 'dispo') {
+                const targetRole = updateData.target_role || document.target_role;
+
+                if (requiresApproval(targetRole)) {
+                    // user → reviewer (dispo): masuk approval flow, notifikasi reviewer
                     prisma.user.findMany({ where: { role: 'reviewer' }, select: { id: true } }).then(reviewers => {
                         reviewers.forEach(reviewer => {
                             notificationService.createNotification(reviewer.id, 'App\\Notifications\\DocumentNeedsReview', {
@@ -343,6 +368,7 @@ export const updateDocument = async (id, user, data) => {
                         });
                     }).catch(console.error);
                 }
+                // user → user / group: tidak ada approval flow, langsung sent (tidak ada else)
 
                 if (oldStatus === 'needs_revision') {
                     newVersion = incrementVersionString(newVersion, false);
@@ -372,16 +398,20 @@ export const updateDocument = async (id, user, data) => {
             action = updateData.status === 'pending_review' ? 'sent' : updateData.status;
             notes = getStatusChangeNote(updateData.status);
 
-            if (updateData.status === 'pending_review' && updateData.target_role === 'dispo') {
-                prisma.user.findMany({ where: { role: 'reviewer' }, select: { id: true } }).then(reviewers => {
-                    reviewers.forEach(reviewer => {
-                        notificationService.createNotification(reviewer.id, 'App\\Notifications\\DocumentNeedsReview', {
-                            document_id: id,
-                            title: document.title || data.title,
-                            message: `Dokumen baru "${document.title || data.title}" menunggu review Anda.`
-                        }).catch(console.error);
-                    });
-                }).catch(console.error);
+            if (updateData.status === 'pending_review') {
+                const targetRole = updateData.target_role || document.target_role;
+                if (requiresApproval(targetRole)) {
+                    // Hanya notifikasi reviewer jika memang target ke dispo
+                    prisma.user.findMany({ where: { role: 'reviewer' }, select: { id: true } }).then(reviewers => {
+                        reviewers.forEach(reviewer => {
+                            notificationService.createNotification(reviewer.id, 'App\\Notifications\\DocumentNeedsReview', {
+                                document_id: id,
+                                title: document.title || data.title,
+                                message: `Dokumen baru "${document.title || data.title}" menunggu review Anda.`
+                            }).catch(console.error);
+                        });
+                    }).catch(console.error);
+                }
             }
 
             if (updateData.status === 'approved' && oldStatus !== 'approved') {
@@ -427,7 +457,7 @@ export const deleteDocument = async (id, user, reason) => {
     const document = await documentRepository.findById(id);
     if (!document) throw new NotFoundError('Document not found');
 
-    if (document.author_id !== user.id && user.role !== 'admin') {
+    if (Number(document.author_id) !== Number(user.id) && user.role !== 'admin') {
         throw new ForbiddenError('Unauthorized');
     }
     if (document.status === 'approved') {

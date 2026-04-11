@@ -87,3 +87,17 @@ export const getAllowedGroupNames = (user, allGroupNames) => {
     // Staff / Kabid — restrict to own group only
     return allGroupNames.filter(name => name === user.group_name);
 };
+
+/**
+ * Tentukan apakah pengiriman dokumen memerlukan approval atau tidak.
+ *
+ * Aturan:
+ *  - user → reviewer (target_role: 'dispo') → WAJIB approval
+ *  - user → user / group / lainnya          → TIDAK perlu approval
+ *
+ * @param {string} targetRole  - Target role dokumen ('dispo' | 'user' | 'group' | ...)
+ * @returns {boolean}
+ */
+export const requiresApproval = (targetRole) => {
+    return targetRole === 'dispo';
+};

@@ -313,8 +313,8 @@ const DocumentViewer = () => {
                                     <span className="font-semibold text-slate-800">{doc.author?.name}</span>
                                 </div>
                                 <div className="flex justify-between border-b border-slate-100 pb-2">
-                                    <span className="text-slate-500">Tanggal Dibuat</span>
-                                    <span className="font-semibold text-slate-800">{new Date(doc.created_at).toLocaleDateString()}</span>
+                                    <span className="text-slate-500">Tanggal Surat</span>
+                                    <span className="font-semibold text-slate-800">{new Date(doc.content_data?.date || doc.created_at).toLocaleDateString()}</span>
                                 </div>
                                 <div className="flex justify-between border-b border-slate-100 pb-2">
                                     <span className="text-slate-500">Terakhir Diubah</span>

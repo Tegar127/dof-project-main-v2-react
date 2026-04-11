@@ -186,7 +186,7 @@ const DocumentTable = ({
                                         </td>
                                         {/* Date */}
                                         <td className="px-5 py-4 text-sm text-gray-500 font-medium">
-                                            {format(new Date(doc.created_at), 'dd MMM yyyy', { locale: id })}
+                                            {format(new Date(doc.content_data?.date || doc.created_at), 'dd MMM yyyy', { locale: id })}
                                         </td>
                                         {/* Status */}
                                         <td className="px-5 py-4">

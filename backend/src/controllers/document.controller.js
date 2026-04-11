@@ -1,8 +1,8 @@
 import * as documentService from '../services/document.service.js';
+import { generateDocNumber } from '../services/document.service.js';
 import { catchAsync } from '../utils/catchAsync.js';
 import { sendSuccess } from '../utils/responses.js';
 import * as documentRepository from '../repositories/document.repository.js';
-import prisma from '../config/database.js';
 
 export const getAllDocuments = catchAsync(async (req, res) => {
     const documents = await documentService.getAllDocuments(req.user, req.query);
@@ -58,50 +58,26 @@ export const restoreVersion = catchAsync(async (req, res) => {
 });
 
 /**
- * Generate nomor surat nota dinas otomatis.
- * Format: ND-{seq}/{kodeKlasifikasi}/{kodeUnit}/{bulanRomawi}/{tahun}
- * Contoh: ND-194/PR.04.01/E/X/2025
+ * Generate nomor surat secara preview (tanpa membuat dokumen).
  *
  * Query params:
  *   type           : 'nota' (default) | 'sppd' | 'perj'
  *   classification : kode klasifikasi (default: 'PR.04.01')
- *   unit           : kode unit          (default: 'E')
+ *   unit           : kode unit        (default: 'E')
+ *   date           : tanggal referensi ISO (default: sekarang)
  */
 export const generateDocumentNumber = catchAsync(async (req, res) => {
-    const type = req.query.type || 'nota';
+    const type           = req.query.type || 'nota';
     const classification = (req.query.classification || 'PR.04.01').toUpperCase();
-    const unit = (req.query.unit || 'E').toUpperCase();
+    const unit           = (req.query.unit || 'E').toUpperCase();
+    const refDate        = req.query.date ? new Date(req.query.date) : new Date();
+    const currentNumber  = req.query.currentNumber || null;
 
-    // Gunakan tanggal dari query param jika ada, fallback ke hari ini
-    const refDate = req.query.date ? new Date(req.query.date) : new Date();
-    const year = refDate.getFullYear();
-    const month = refDate.getMonth(); // 0-indexed
+    const docNumber = await generateDocNumber(type, classification, unit, refDate, currentNumber);
 
-    // Angka Romawi untuk bulan
-    const ROMAN_MONTHS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
-
-    // Hitung jumlah dokumen sejenis yang sudah ada di TAHUN yang dipilih
-    const startOfYear = new Date(year, 0, 1);
-    const startOfNextYear = new Date(year + 1, 0, 1);
-
-    const count = await prisma.document.count({
-        where: {
-            type: type,
-            created_at: {
-                gte: startOfYear,
-                lt: startOfNextYear,
-            },
-        },
+    return sendSuccess(res, 200, 'Document number generated', {
+        docNumber,
+        year: refDate.getFullYear(),
+        month: refDate.getMonth() + 1,
     });
-
-    const seq = count + 1;
-    const romanMonth = ROMAN_MONTHS[month];
-
-    // Prefix berdasarkan type
-    const prefixes = { nota: 'ND', sppd: 'SPPD', perj: 'PKS' };
-    const prefix = prefixes[type] || 'ND';
-
-    const docNumber = `${prefix}-${seq}/${classification}/${unit}/${romanMonth}/${year}`;
-
-    return sendSuccess(res, 200, 'Document number generated', { docNumber, seq, year, month: month + 1 });
 });

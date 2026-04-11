@@ -24,13 +24,23 @@ function SectionHeading({ number, title }) {
 // ─── Modal Ubah Nomor Surat ──────────────────────────────────────────────────
 // Nomor tidak bisa diedit langsung. Perubahan WAJIB disertai alasan yang akan
 // tercatat di log riwayat dokumen.
-function GenerateNumberModal({ currentNumber, onClose, onGenerate }) {
+function GenerateNumberModal({ currentNumber, currentDate, onClose, onGenerate }) {
     const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
     const todayStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
-    const [classification, setClassification] = useState('PR.04.01');
-    const [unit, setUnit] = useState('E');
-    const [selectedDate, setSelectedDate] = useState(todayStr);
+    let initClass = 'PR.04.01';
+    let initUnit = 'E';
+    if (currentNumber) {
+        const parts = currentNumber.split('/');
+        if (parts.length >= 5) {
+            initClass = parts[1];
+            initUnit = parts[2];
+        }
+    }
+
+    const [classification, setClassification] = useState(initClass);
+    const [unit, setUnit] = useState(initUnit);
+    const [selectedDate, setSelectedDate] = useState(currentDate || todayStr);
     const [reason, setReason] = useState('');
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState('');
@@ -51,11 +61,11 @@ function GenerateNumberModal({ currentNumber, onClose, onGenerate }) {
         setError('');
         try {
             const res = await api.get('/documents/generate-number', {
-                params: { type: 'nota', classification, unit, date: selectedDate }
+                params: { type: 'nota', classification, unit, date: selectedDate, currentNumber }
             });
             const newNumber = res.data?.data?.docNumber || res.data?.docNumber;
             if (!newNumber) throw new Error('Response tidak valid dari server');
-            onGenerate({ number: newNumber, reason: reason.trim() });
+            onGenerate({ number: newNumber, reason: reason.trim(), selectedDate });
         } catch (err) {
             setError(err.response?.data?.message || err.message || 'Gagal memperbarui nomor.');
         } finally {
@@ -311,11 +321,13 @@ const NotaEditor = ({ formData, setFormData, readOnly = false }) => {
             {showGenModal && (
                 <GenerateNumberModal
                     currentNumber={formData.docNumber}
+                    currentDate={formData.date}
                     onClose={() => setShowGenModal(false)}
-                    onGenerate={({ number, reason }) => {
+                    onGenerate={({ number, reason, selectedDate }) => {
                         setFormData(prev => ({
                             ...prev,
                             docNumber: number,
+                            date: selectedDate,
                             _docChangeNote: `Perubahan nomor surat: ${reason}`
                         }));
                         setShowGenModal(false);

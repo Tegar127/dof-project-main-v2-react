@@ -1,7 +1,7 @@
 import express from 'express';
 import * as documentController from '../controllers/document.controller.js';
 import * as documentApprovalController from '../controllers/documentApproval.controller.js';
-import { requireAuth } from '../middlewares/auth.middleware.js';
+import { requireAuth, requireRole } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
 import {
     createDocumentSchema,
@@ -34,8 +34,8 @@ router.post('/:id/versions/:versionId/restore', documentController.restoreVersio
 
 // Document Approvals
 router.get('/:id/approvals', documentApprovalController.getApprovals);
-router.post('/:documentId/approvals/:approvalId/approve', validate(approveDocumentSchema), documentApprovalController.approveDocument);
-router.post('/:documentId/approvals/:approvalId/reject', validate(rejectDocumentSchema), documentApprovalController.rejectDocument);
+router.post('/:documentId/approvals/:approvalId/approve', requireRole('reviewer', 'admin'), validate(approveDocumentSchema), documentApprovalController.approveDocument);
+router.post('/:documentId/approvals/:approvalId/reject', requireRole('reviewer', 'admin'), validate(rejectDocumentSchema), documentApprovalController.rejectDocument);
 router.put('/:id/approvals/sequence', validate(updateApprovalSequenceSchema), documentApprovalController.updateSequence);
 
 export default router;

@@ -77,7 +77,7 @@ const ReviewerDashboard = () => {
         const matchesStatus = statusFilter === 'all' || doc.status === statusFilter;
         let matchesDate = true;
         if (dateFrom && dateTo) {
-            const docDate = new Date(doc.created_at);
+            const docDate = new Date(doc.content_data?.date || doc.created_at);
             const to = new Date(dateTo);
             to.setHours(23, 59, 59, 999);
             matchesDate = docDate >= new Date(dateFrom) && docDate <= to;
