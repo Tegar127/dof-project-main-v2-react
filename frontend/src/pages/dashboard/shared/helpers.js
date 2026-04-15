@@ -17,23 +17,23 @@ export const getStatusLabel = (status, doc = null) => {
 
 export const getStatusConfig = (status) => {
     const configs = {
-        draft: { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
-        pending_review: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-400' },
-        needs_revision: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-400' },
-        approved: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-        sent: { bg: 'bg-indigo-50', text: 'text-indigo-700', dot: 'bg-indigo-500' },
-        received: { bg: 'bg-violet-50', text: 'text-violet-700', dot: 'bg-violet-500' },
+        draft: { bg: 'bg-slate-100', text: 'text-slate-700', dot: 'bg-slate-500' },
+        pending_review: { bg: 'bg-amber-50', text: 'text-amber-800', dot: 'bg-amber-500' },
+        needs_revision: { bg: 'bg-red-50', text: 'text-red-800', dot: 'bg-red-500' },
+        approved: { bg: 'bg-emerald-50', text: 'text-emerald-800', dot: 'bg-emerald-600' },
+        sent: { bg: 'bg-blue-50', text: 'text-blue-800', dot: 'bg-blue-600' },
+        received: { bg: 'bg-teal-50', text: 'text-teal-800', dot: 'bg-teal-600' },
     };
     return configs[status] || configs.draft;
 };
 
 export const getDocTypeConfig = (type) => {
     const configs = {
-        nota: { label: 'Nota Dinas', short: 'ND', light: 'bg-violet-50 text-violet-600' },
-        sppd: { label: 'SPPD', short: 'SP', light: 'bg-emerald-50 text-emerald-600' },
-        perj: { label: 'Perjanjian', short: 'PK', light: 'bg-orange-50 text-orange-600' },
+        nota: { label: 'Nota Dinas', short: 'ND', light: 'bg-teal-50 text-teal-800' },
+        sppd: { label: 'SPPD', short: 'SP', light: 'bg-emerald-50 text-emerald-800' },
+        perj: { label: 'Perjanjian', short: 'PK', light: 'bg-orange-50 text-orange-800' },
     };
-    return configs[type] || { label: type, short: type?.charAt(0)?.toUpperCase() ?? '?', light: 'bg-slate-50 text-slate-600' };
+    return configs[type] || { label: type, short: type?.charAt(0)?.toUpperCase() ?? '?', light: 'bg-slate-100 text-slate-700' };
 };
 
 export const isDocEditable = (doc, currentUser) => {

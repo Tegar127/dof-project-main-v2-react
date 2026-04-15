@@ -134,35 +134,35 @@ const ReviewerDashboard = () => {
                     {/* ── Welcome + Stats ── */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                         {/* Welcome banner */}
-                        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 p-6 text-white shadow-xl shadow-amber-200">
-                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+                        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-700 to-amber-900 p-6 text-white shadow-xl">
+                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-amber-400/10 rounded-full blur-xl" />
                             <div className="relative z-10">
-                                <p className="text-amber-100 text-xs font-semibold uppercase tracking-widest mb-1">Reviewer</p>
+                                <p className="text-amber-300 text-xs font-semibold uppercase tracking-widest mb-1">Reviewer</p>
                                 <h2 className="text-2xl font-black leading-tight mb-1">Halo, {user?.name?.split(' ')[0]}! 👋</h2>
-                                <p className="text-amber-100 text-sm">Tinjau dan setujui dokumen yang masuk.</p>
+                                <p className="text-slate-300 text-sm">Tinjau dan setujui dokumen yang masuk.</p>
                             </div>
                         </div>
 
                         {/* Stat: Total */}
                         <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-violet-600 shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 shrink-0">
                                 <FolderOpen size={22} />
                             </div>
                             <div>
                                 <div className="text-3xl font-black text-gray-900">{filteredDocs.length}</div>
-                                <div className="text-xs font-semibold text-gray-400 mt-0.5">Total Dokumen</div>
+                                <div className="text-xs font-semibold text-gray-600 mt-0.5">Total Dokumen</div>
                             </div>
                         </div>
 
                         {/* Stat: Pending review */}
                         <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-700 shrink-0">
                                 <Clock size={22} />
                             </div>
                             <div>
                                 <div className="text-3xl font-black text-gray-900">{pendingCount}</div>
-                                <div className="text-xs font-semibold text-gray-400 mt-0.5">Menunggu Review</div>
+                                <div className="text-xs font-semibold text-gray-600 mt-0.5">Menunggu Review</div>
                             </div>
                         </div>
                     </div>

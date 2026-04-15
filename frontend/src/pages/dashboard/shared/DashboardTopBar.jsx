@@ -33,13 +33,14 @@ const DashboardTopBar = ({
             <div className="flex items-center gap-3">
                 <button
                     onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-500 transition"
+                    className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-600 transition"
+                    aria-label="Toggle Sidebar"
                 >
                     <LayoutDashboard size={16} />
                 </button>
                 <div>
-                    <h1 className="font-black text-gray-900 text-base leading-tight">{title}</h1>
-                    <p className="text-xs text-gray-400 font-medium">
+                    <h1 className="font-bold text-gray-900 text-base leading-tight">{title}</h1>
+                    <p className="text-xs text-gray-600 font-medium">
                         {format(new Date(), 'EEEE, dd MMMM yyyy', { locale: id })}
                     </p>
                 </div>
@@ -69,15 +70,15 @@ const DashboardTopBar = ({
                                 <div className="p-4 border-b border-gray-100 flex justify-between items-center">
                                     <h3 className="font-bold text-sm text-gray-800">Notifikasi</h3>
                                     {notifications.length > 0 && (
-                                        <button onClick={onMarkAllRead} className="text-xs text-violet-600 hover:text-violet-700 font-semibold">
+                                        <button onClick={onMarkAllRead} className="text-xs text-teal-700 hover:text-teal-800 font-semibold underline-offset-2 hover:underline">
                                             Tandai semua dibaca
                                         </button>
                                     )}
                                 </div>
                                 <div className="max-h-80 overflow-y-auto">
                                     {notifications.length === 0 ? (
-                                        <div className="p-8 text-center text-gray-400 text-sm">
-                                            <Bell size={32} className="mx-auto mb-2 opacity-30" />
+                                        <div className="p-8 text-center text-gray-600 text-sm">
+                                            <Bell size={32} className="mx-auto mb-2 opacity-40" />
                                             Tidak ada notifikasi baru
                                         </div>
                                     ) : (
@@ -87,13 +88,13 @@ const DashboardTopBar = ({
                                                 onClick={() => onMarkRead(notif.id)}
                                                 className="p-4 border-b border-gray-50 hover:bg-gray-50 transition cursor-pointer flex gap-3"
                                             >
-                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${notif.data.type === 'danger' ? 'bg-red-100 text-red-600' : 'bg-violet-100 text-violet-600'}`}>
+                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${notif.data.type === 'danger' ? 'bg-red-100 text-red-700' : 'bg-teal-100 text-teal-700'}`}>
                                                     <Bell size={14} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-semibold text-gray-800">{notif.data.title}</p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">{notif.data.message}</p>
-                                                    <p className="text-[10px] text-gray-300 mt-1">
+                                                    <p className="text-xs text-gray-600 mt-0.5">{notif.data.message}</p>
+                                                    <p className="text-xs text-gray-500 mt-1">
                                                         {format(new Date(notif.created_at), 'dd MMM · HH:mm', { locale: id })}
                                                     </p>
                                                 </div>
@@ -107,7 +108,7 @@ const DashboardTopBar = ({
                 </div>
 
                 {/* Avatar */}
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-400 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 to-cyan-700 flex items-center justify-center text-white text-xs font-bold shadow-sm">
                     {initials}
                 </div>
             </div>

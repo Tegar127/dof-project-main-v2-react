@@ -178,35 +178,35 @@ const UserDashboard = () => {
                     {/* ── Welcome + Stats ── */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                         {/* Welcome banner */}
-                        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-700 p-6 text-white shadow-xl shadow-purple-200">
-                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+                        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-700 to-teal-900 p-6 text-white shadow-xl">
+                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                            <div className="absolute -bottom-8 -left-4 w-24 h-24 bg-teal-400/10 rounded-full blur-xl" />
                             <div className="relative z-10">
-                                <p className="text-purple-200 text-xs font-semibold uppercase tracking-widest mb-1">Staff</p>
+                                <p className="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-1">Staff</p>
                                 <h2 className="text-2xl font-black leading-tight mb-1">Halo, {user?.name?.split(' ')[0]}! 👋</h2>
-                                <p className="text-purple-200 text-sm">Kelola dokumen dinas Anda dengan mudah.</p>
+                                <p className="text-slate-300 text-sm">Kelola dokumen dinas Anda dengan mudah.</p>
                             </div>
                         </div>
 
                         {/* Stat: Total */}
                         <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-violet-600 shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 shrink-0">
                                 <FolderOpen size={22} />
                             </div>
                             <div>
                                 <div className="text-3xl font-black text-gray-900">{filteredDocs.length}</div>
-                                <div className="text-xs font-semibold text-gray-400 mt-0.5">Total Dokumen</div>
+                                <div className="text-xs font-semibold text-gray-600 mt-0.5">Total Dokumen</div>
                             </div>
                         </div>
 
                         {/* Stat: Approved */}
                         <div className="rounded-2xl bg-white border border-gray-100 p-5 shadow-sm flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700 shrink-0">
                                 <CheckCircle size={22} />
                             </div>
                             <div>
                                 <div className="text-3xl font-black text-gray-900">{approvedCount}</div>
-                                <div className="text-xs font-semibold text-gray-400 mt-0.5">Disetujui</div>
+                                <div className="text-xs font-semibold text-gray-600 mt-0.5">Disetujui</div>
                             </div>
                         </div>
                     </div>

@@ -1,158 +1,212 @@
-# DOF Project — Developer & Technical Documentation
+# DOF Project — Document Flow System
 
-> Document Management System (Sistem Manajemen Dokumen Cerdas)
+> Sistem Pengelolaan Surat Dinas Berbasis Web
 > Stack: React 19 · Node.js · Express 5 · PostgreSQL · Prisma ORM · Tailwind CSS v4
 
 ---
 
-## Table of Contents
+## Daftar Isi
 
-1. [Project Overview](#1-project-overview)
-2. [System Architecture](#2-system-architecture)
-3. [Technology Stack](#3-technology-stack)
-4. [Project Structure](#4-project-structure)
-5. [Prerequisites](#5-prerequisites)
-6. [Installation & Setup](#6-installation--setup)
-7. [Environment Configuration](#7-environment-configuration)
-8. [Database Setup](#8-database-setup)
-9. [Running the Application](#9-running-the-application)
-10. [Authentication & Authorization](#10-authentication--authorization)
-11. [API Reference](#11-api-reference)
-12. [Document Export & Printing](#12-document-export--printing)
-13. [Activity Logging & Auditing](#13-activity-logging--auditing)
-14. [Production Deployment](#14-production-deployment)
-15. [Active Directory / LDAP Integration](#15-active-directory--ldap-integration)
-16. [Security Considerations](#16-security-considerations)
-
----
-
-## 1. Project Overview
-
-**DOF Project** is an intelligent, web-based document management system engineered for the creation, approval, and distribution of official documents, including Nota Dinas, SPPD (Surat Perintah Perjalanan Dinas), and Surat Perjanjian.
-
-**Core Features:**
-- **Dynamic Document Editor:** Auto-adapting input fields based on the selected document type.
-- **Multi-Level Approval Workflow:** Sequential review processes for Draft/Menunggu Review documents, including reject (return with comments) and approve actions.
-- **Document Disposition:** Direct distribution of approved (Final) documents to specific groups, roles, or broadly to all users.
-- **Electronic Signatures & Initials:** Built-in interactive digital signatures via canvas, plus image uploads (PNG/JPG).
-- **Strict Read-Only Archiving:** 100% locked documents for finalized and distributed records, ensuring compliance and data integrity.
-- **Comprehensive Audit Trails:** Detailed logging of status updates, field-level modifications, and user activity.
+1. [Gambaran Umum](#1-gambaran-umum)
+2. [Arsitektur Sistem](#2-arsitektur-sistem)
+3. [Teknologi yang Digunakan](#3-teknologi-yang-digunakan)
+4. [Struktur Proyek](#4-struktur-proyek)
+5. [Kebutuhan Sistem](#5-kebutuhan-sistem)
+6. [Instalasi dan Setup](#6-instalasi-dan-setup)
+7. [Konfigurasi Environment](#7-konfigurasi-environment)
+8. [Setup Database](#8-setup-database)
+9. [Menjalankan Aplikasi](#9-menjalankan-aplikasi)
+10. [Role dan Hak Akses](#10-role-dan-hak-akses)
+11. [Referensi API](#11-referensi-api)
+12. [Fitur Cetak dan Ekspor PDF](#12-fitur-cetak-dan-ekspor-pdf)
+13. [Riwayat Aktivitas dan Audit Log](#13-riwayat-aktivitas-dan-audit-log)
+14. [Deployment Produksi](#14-deployment-produksi)
+15. [Pertimbangan Keamanan](#15-pertimbangan-keamanan)
 
 ---
 
-## 2. System Architecture
+## 1. Gambaran Umum
+
+**DOF (Document Flow)** adalah sistem pengelolaan surat dinas berbasis web yang dirancang untuk menggantikan proses dokumen berbasis kertas dalam lingkungan organisasi. Sistem ini mendukung pembuatan, persetujuan bertingkat, distribusi, dan pemantauan surat dinas secara terpusat dan terstruktur.
+
+### Jenis Surat yang Didukung
+
+- **Nota Dinas** — Surat komunikasi resmi antar unit atau divisi dalam organisasi.
+- **SPPD (Surat Perintah Perjalanan Dinas)** — Surat yang mengatur kegiatan perjalanan dinas pegawai.
+- **Surat Perjanjian Kerja Sama (PKS)** — Dokumen kerja sama formal antara dua pihak.
+
+### Fitur Utama
+
+- **Editor Dokumen Dinamis** — Form input yang menyesuaikan secara otomatis berdasarkan jenis surat yang dipilih (Nota Dinas, SPPD, atau Perjanjian).
+- **Penomoran Surat Otomatis** — Nomor surat dibuat secara sekuensial dan global oleh sistem. Format: `PREFIX-urutan/klasifikasi/unit/BulanRomawi/Tahun`. Contoh: `ND-12/PR.04.01/E/IV/2026`.
+- **Alur Persetujuan Bertingkat (Multi-Level Approval)** — Surat yang dikirim melalui jalur Disposisi melewati proses review secara berurutan. Setiap Reviewer dapat menyetujui (ACC) atau mengembalikan surat disertai catatan.
+- **Pembatasan Pengiriman Berdasarkan Jabatan** — Staf dan Kepala Bidang hanya dapat mengirim surat ke divisi mereka sendiri. Kepala Divisi dan Administrator dapat mengirim ke seluruh divisi dalam organisasi.
+- **Distribusi Surat (Admin)** — Administrator mendistribusikan surat yang telah disetujui kepada penerima tertentu: seluruh pegawai, divisi tertentu, atau satu orang spesifik.
+- **Tanda Tangan dan Paraf Digital** — Mendukung penandatanganan interaktif menggunakan canvas (gambar tangan) maupun unggah gambar (PNG/JPG).
+- **Penguncian Dokumen Final** — Surat yang berstatus Disetujui terkunci sepenuhnya. Tidak ada pihak manapun yang dapat mengubah isinya, termasuk Administrator.
+- **Pemantauan Keterbacaan** — Administrator dapat memantau siapa saja yang sudah dan belum membaca surat yang didistribusikan, lengkap dengan persentase keterbacaan.
+- **Riwayat Versi Dokumen** — Setiap perubahan konten menyimpan versi baru. Pembuat surat dapat mengembalikan dokumen ke versi sebelumnya kapan saja.
+- **Work Log (Pencatatan Waktu Pengerjaan)** — Sistem mencatat secara otomatis durasi waktu yang dihabiskan setiap pengguna dalam mengerjakan suatu dokumen.
+- **Pemberitahuan Otomatis (Notifikasi)** — Sistem mengirim notifikasi ke pihak yang relevan pada setiap kejadian penting: pengajuan, persetujuan, penolakan, distribusi, dan penerimaan surat.
+- **Filter dan Pencarian Dokumen** — Pengguna dapat memfilter dokumen berdasarkan judul, jenis surat, status, dan rentang tanggal.
+- **Dashboard per Role** — Tampilan dashboard yang berbeda untuk setiap role: User Dashboard, Reviewer Dashboard, dan Admin Dashboard dengan statistik dan akses cepat yang relevan.
+- **Arsip Seluruh Dokumen (Admin)** — Administrator memiliki akses ke database terpusat yang menampilkan seluruh dokumen dari semua pengguna.
+
+---
+
+## 2. Arsitektur Sistem
 
 ```text
 ┌─────────────────────────────────────────────────────────────┐
-│                         Browser (React SPA)                 │
-│  React 19 + Vite │ React Router v7 │ Tailwind CSS v4        │
-│  Context API (Auth) │ html2pdf.js │ react-signature-canvas  │
-└─────────────────────────────┬───────────────────────────────┘
-                              │  HTTP/HTTPS (REST API)
-                              │  Access Token: Authorization: Bearer
-                              ▼
+│                    Browser (React SPA)                      │
+│  React 19 + Vite  │  React Router v7  │  Tailwind CSS v4   │
+│  Context API (Auth)  │  react-signature-canvas              │
+└─────────────────────────┬───────────────────────────────────┘
+                          │  HTTP/HTTPS (REST API)
+                          │  Authorization: Bearer <JWT>
+                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Nginx Reverse Proxy (Production)          │
-│  HTTPS termination │ Static file serving │ API proxying     │
-└─────────────────────────────┬───────────────────────────────┘
-                              │
-                              ▼
+│              Nginx Reverse Proxy (Produksi)                 │
+│  Terminasi HTTPS  │  Static file serving  │  API proxying  │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   Node.js + Express Backend                 │
+│                Node.js + Express Backend                    │
 │  Port: 5000                                                 │
 │  ├── Middleware: Helmet, CORS, Rate Limit                   │
-│  ├── Auth Middleware: JWT verification + role check         │
-│  ├── Services: Database interactions, File handling         │
-│  └── Controllers: auth, documents, folders, groups, users   │
-└─────────────────────────────┬───────────────────────────────┘
-                              │  Prisma ORM
-                              ▼
+│  ├── Auth Middleware: JWT verification + role & jabatan     │
+│  ├── Services: Document, Approval, Distribution, WorkLog   │
+│  └── Controllers: auth, documents, folders, groups, users  │
+└─────────────────────────┬───────────────────────────────────┘
+                          │  Prisma ORM
+                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│           PostgreSQL Database (port 5432)                   │
+│             PostgreSQL Database (port 5432)                 │
 │  Tables: users, groups, documents, document_versions,       │
-│          document_approvals, document_logs, folders, etc.   │
+│  document_approvals, document_logs, document_work_logs,     │
+│  document_distributions, folders, notifications            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Technology Stack
+## 3. Teknologi yang Digunakan
 
-| Layer | Technology | Version | Purpose |
+| Layer | Teknologi | Versi | Fungsi |
 |---|---|---|---|
-| Frontend | React | 19.x | Component-based UI framework |
-| Frontend Build | Vite | 7.x | High-performance bundler and dev server |
-| Frontend Routing | React Router DOM | 7.x | Client-side routing management |
-| Styling | Tailwind CSS | 4.x | Utility-first CSS framework |
-| Icons | lucide-react | 0.575+ | Minimalist SVG icons |
-| HTTP Client | Axios | 1.13+ | REST API polling and interceptors |
-| Signatures | react-signature-canvas | 1.x | Interactive digital signature pads |
-| PDF Export | html2pdf.js | 0.14+ | Client-side DOM to PDF rendering |
-| Backend Runtime | Node.js | 18+ | High-performance JavaScript runtime |
-| Backend Framework| Express | 5.x | Web application framework for routing |
-| ORM | Prisma | 6.x | Schema-driven database interactions |
-| Database | PostgreSQL | 14+ | Relational enterprise database |
-| Authentication | jsonwebtoken & bcryptjs | 9.x / 3.x | Secure JWT auth & password hashing |
-| LDAP/AD | ldapts | 8.x | Active Directory/LDAP integration protocol |
-| Validation | Zod | 4.x | Type-safe schema validation |
-| Security | Helmet & express-rate-limit | 8.x / 8.x | HTTP header protection & rate mitigation |
+| Frontend | React | 19.x | Framework UI berbasis komponen |
+| Frontend Build | Vite | 7.x | Bundler dan dev server |
+| Frontend Routing | React Router DOM | 7.x | Manajemen routing sisi klien |
+| Styling | Tailwind CSS | 4.x | Framework CSS utility-first |
+| Icons | lucide-react | 0.575+ | Ikon SVG minimalis |
+| HTTP Client | Axios | 1.13+ | Komunikasi REST API |
+| Tanda Tangan | react-signature-canvas | 1.x | Kanvas tanda tangan digital interaktif |
+| Backend Runtime | Node.js | 20+ | JavaScript runtime sisi server |
+| Backend Framework | Express | 5.x | Framework routing web |
+| ORM | Prisma | 6.x | Interaksi database berbasis skema |
+| Database | PostgreSQL | 14+ | Database relasional |
+| Autentikasi | jsonwebtoken & bcryptjs | 9.x / 3.x | JWT auth dan enkripsi password |
+| Validasi | Zod | 4.x | Validasi skema tipe-aman |
+| Keamanan | Helmet & express-rate-limit | 8.x | Proteksi header HTTP dan rate limiting |
 
 ---
 
-## 4. Project Structure
+## 4. Struktur Proyek
 
 ```text
-DOF Project/
-├── README.md                 # Project technical documentation
-├── backend/                  # REST API Service
-│   ├── prisma/               # Prisma schema and generated clients
-│   │   ├── schema.prisma     # Central data model definition
-│   │   └── migrations/       # SQL migration history
+dof-project-main-v2-react/
+├── README.md
+├── backend/
+│   ├── prisma/
+│   │   └── schema.prisma         # Definisi model database
 │   ├── src/
-│   │   ├── controllers/      # HTTP request handlers mapping to business logic
-│   │   ├── routes/           # URL endpoint definitions & middleware mapping
-│   │   └── services/         # Reusable core business and database operations
-│   ├── package.json
-│   └── .env                  # Backend configuration variables
+│   │   ├── config/               # Konfigurasi database dan koneksi
+│   │   ├── controllers/          # Handler HTTP per domain
+│   │   │   ├── auth.controller.js
+│   │   │   ├── document.controller.js
+│   │   │   ├── documentApproval.controller.js
+│   │   │   ├── documentDistribution.controller.js
+│   │   │   ├── documentWorkLog.controller.js
+│   │   │   ├── folder.controller.js
+│   │   │   ├── group.controller.js
+│   │   │   ├── notification.controller.js
+│   │   │   └── user.controller.js
+│   │   ├── middlewares/          # Auth, validasi, error handler
+│   │   ├── repositories/         # Query database per entitas
+│   │   ├── routes/               # Definisi endpoint dan middleware
+│   │   ├── services/             # Logika bisnis utama
+│   │   │   ├── document.service.js
+│   │   │   ├── documentApproval.service.js
+│   │   │   ├── documentDistribution.service.js
+│   │   │   ├── documentWorkLog.service.js
+│   │   │   └── notification.service.js
+│   │   └── utils/
+│   │       ├── roleUtils.js      # Aturan pembatasan jabatan (Kadiv/Kabid/Staf)
+│   │       └── validators.js     # Skema validasi Zod
+│   ├── server.js
+│   └── .env
 │
-└── frontend/                 # Client SPA application
-    ├── src/
-    │   ├── components/       # Presentation components (Editor, Modals, Lists)
-    │   ├── context/          # Application-level state (AuthContext)
-    │   ├── pages/            # Routable top-level components (Dashboard, Auth)
-    │   └── utils/            # Utility functions (formatting, validation)
-    ├── package.json
-    └── index.css             # Tailwind imports and CSS variables
+└── frontend/
+    └── src/
+        ├── components/
+        │   ├── admin/            # Komponen khusus Admin Dashboard
+        │   │   ├── UsersTab.jsx
+        │   │   ├── GroupsTab.jsx
+        │   │   ├── DistributionsTab.jsx
+        │   │   └── AllDocumentsTab.jsx
+        │   └── editor/           # Editor per jenis surat
+        │       ├── NotaEditor.jsx
+        │       ├── SppdEditor.jsx
+        │       ├── PerjanjianEditor.jsx
+        │       ├── QuillEditor.jsx
+        │       └── SignatureModal.jsx
+        ├── context/
+        │   └── AuthContext.jsx   # State login dan data user global
+        ├── pages/
+        │   ├── dashboard/
+        │   │   ├── AdminDashboard.jsx
+        │   │   ├── ReviewerDashboard.jsx
+        │   │   ├── UserDashboard.jsx
+        │   │   └── shared/       # Komponen bersama antar dashboard
+        │   ├── DocumentEditor.jsx
+        │   ├── DocumentViewer.jsx
+        │   ├── Documents.jsx
+        │   ├── Folders.jsx
+        │   ├── Login.jsx
+        │   └── Profile.jsx
+        └── utils/
+            └── api.js            # Axios instance dengan interceptor JWT
 ```
 
 ---
 
-## 5. Prerequisites
+## 5. Kebutuhan Sistem
 
-| Requirement | Minimum Version | Note |
+| Kebutuhan | Versi Minimum | Catatan |
 |---|---|---|
-| Node.js | v20.x LTS | Backend requires modern JS features |
+| Node.js | v20.x LTS | Dibutuhkan untuk fitur ES Module modern |
 | npm | 10.x | Package manager |
-| PostgreSQL | 14.x | Utilizing advanced relational schema |
-| Git | 2.x | Source control management |
+| PostgreSQL | 14.x | Database relasional utama |
+| Git | 2.x | Version control |
 
 ---
 
-## 6. Installation & Setup
+## 6. Instalasi dan Setup
 
-### Step 1: Clone the Repository
+### Langkah 1 — Clone Repository
 ```bash
 git clone <repository_url>
 cd dof-project-main-v2-react
 ```
 
-### Step 2: Install Backend Dependencies
+### Langkah 2 — Install Dependensi Backend
 ```bash
 cd backend
 npm install
 ```
 
-### Step 3: Install Frontend Dependencies
+### Langkah 3 — Install Dependensi Frontend
 ```bash
 cd ../frontend
 npm install
@@ -160,150 +214,275 @@ npm install
 
 ---
 
-## 7. Environment Configuration
+## 7. Konfigurasi Environment
 
-### Backend Configuration
-Create `.env` inside the `backend/` directory:
+### Konfigurasi Backend
+
+Buat file `.env` di dalam folder `backend/`:
 
 ```env
-# PostgreSQL connection mechanism via Prisma
+# Koneksi database PostgreSQL via Prisma
 DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/dof_db?schema=public"
 
-# Auth configurations
-JWT_SECRET="generate-a-secure-random-secret-key"
+# Konfigurasi autentikasi JWT
+JWT_SECRET="isi-dengan-secret-key-yang-aman"
 JWT_EXPIRES_IN="1d"
 
-# Server bindings
+# Port server backend
 PORT=5000
 
-# Client origin for CORS rules
+# Origin frontend untuk aturan CORS
 CLIENT_URL="http://localhost:5173"
 ```
 
 ---
 
-## 8. Database Setup
+## 8. Setup Database
 
-### Creating the PostgreSQL Database
+### Membuat Database PostgreSQL
 ```sql
 CREATE DATABASE dof_db;
 ```
 
-### Applying Migrations & Seeding
-Leverage Prisma to setup your database according to `schema.prisma`.
-
+### Menjalankan Migrasi dan Seeding
 ```bash
 cd backend
-# Deploy tables according to schema definition
+
+# Terapkan struktur tabel sesuai schema.prisma
 npm run prisma:migrate
 
-# Seed administrative and mock data
+# Isi data awal (admin, user, grup contoh)
 npm run seed
 ```
 
-### Schema Architecture Overview
-- **Users, Groups, & Memberships:** Mapped natively for fast access and role-based ACL.
-- **Documents structure:** Complex tree mapping versions (`DocumentVersion`), sequential multi-stage approvals (`DocumentApproval`), complete audit trails (`DocumentLog`), distribution workflows (`DocumentDistribution`), and workload/timesheets (`DocumentWorkLog`).
+### Ringkasan Skema Database
+
+| Tabel | Fungsi |
+|---|---|
+| `users` | Data pengguna, role, dan jabatan (position) |
+| `groups` | Data divisi atau grup dalam organisasi |
+| `documents` | Dokumen surat beserta status dan metadata |
+| `document_versions` | Riwayat versi dokumen (snapshot per perubahan) |
+| `document_approvals` | Rantai persetujuan bertingkat per dokumen |
+| `document_logs` | Log aktivitas dan perubahan status dokumen |
+| `document_work_logs` | Pencatatan durasi pengerjaan dokumen per pengguna |
+| `document_distributions` | Catatan distribusi surat ke penerima |
+| `folders` | Folder untuk mengelompokkan dokumen |
+| `notifications` | Pemberitahuan otomatis antar pengguna |
 
 ---
 
-## 9. Running the Application
+## 9. Menjalankan Aplikasi
 
-### Running Local Development Environment
+### Mode Development
 
-**Backend Environment (Terminal 1):**
+**Terminal 1 — Backend:**
 ```bash
 cd backend
-npm run dev      # Launches hot-reloading Express server on port 5000
+npm run dev
+# Server berjalan di http://localhost:5000
 ```
 
-**Frontend Environment (Terminal 2):**
+**Terminal 2 — Frontend:**
 ```bash
 cd frontend
-npm run dev      # Launches Vite dev server on port 5173
+npm run dev
+# Aplikasi berjalan di http://localhost:5173
 ```
 
-### Creating Production Bundles
+### Build Produksi
 ```bash
 cd frontend
-npm run build    # Assets generated in frontend/dist/
+npm run build
+# Output: frontend/dist/
 ```
 
 ---
 
-## 10. Authentication & Authorization
+## 10. Role dan Hak Akses
 
-### RBAC (Role-Based Access Control) Model
-1. **Regular User:** Can draft new documents, view documents owned/assigned/cc'd to them.
-2. **Reviewer:** Gains ability to process documents in approval sequences, capable of passing forward or rejecting with annotations.
-3. **Administrator:** System-wide rights to bypass read-blocks, manage organization taxonomies (groups, metadata), and distribute localized or global documents.
+Sistem menggunakan kombinasi **role** (level akses sistem) dan **jabatan / position** (level hierarki organisasi) untuk mengontrol hak akses setiap pengguna.
 
-### Security Implementation
-- **JWT (JSON Web Tokens):** Verified across all secure API boundaries.
-- **Immutable State Enforcement:** The system imposes a strict 100% read-only lock dynamically when a `Document` state switches to "Disetujui" (Final) preventing even Admin alteration.
+### Role yang Tersedia
 
----
+| Role | Deskripsi |
+|---|---|
+| `user` | Pengguna umum — pegawai yang membuat dan mengirim surat |
+| `reviewer` | Pengulas — bertugas memeriksa dan menyetujui surat via Disposisi |
+| `admin` | Administrator — mengelola sistem, mendistribusikan surat final |
 
-## 11. API Reference
+### Jabatan dalam Role `user`
 
-All requests must carry the `Authorization: Bearer <TOKEN>` header unless labelled otherwise.
+Jabatan diambil dari field `position` pada data pengguna dan menentukan cakupan pengiriman surat:
 
-### Core Endpoints Preview
-| Domain | Methods | Description |
+| Jabatan | Prefix di `position` | Hak Kirim |
 |---|---|---|
-| `/api/auth` | POST, GET | Handles token generation, profile access, and basic login |
-| `/api/documents` | GET, POST, PUT | Document logic (fetching, creating permutations, version alterations) |
-| `/api/documents/:id/approvals`| POST, PUT | Move document sequence up or register reject/revisions |
-| `/api/users` | GET, POST, PUT, DEL| Management of credentials, titles, and hierarchical levels |
-| `/api/groups` | GET, POST, PUT | Administrative sorting arrays for users |
+| Staf | selain `kadiv` atau `kabid` | Hanya ke divisi sendiri |
+| Kepala Bidang | dimulai dengan `kabid` | Hanya ke divisi sendiri |
+| Kepala Divisi | dimulai dengan `kadiv` | Ke semua divisi dalam organisasi |
+
+### Aturan Pengiriman Surat
+
+- **Ke Disposisi** (`targetRole: dispo`) — Semua pengguna boleh mengirim. Surat masuk antrian persetujuan Reviewer.
+- **Ke Grup/Divisi** (`targetRole: group`) — Dibatasi oleh jabatan. Staf dan Kepala Bidang hanya boleh mengirim ke divisi mereka sendiri.
+- **Ke Pengguna Tertentu** (`targetRole: user`) — Semua pengguna boleh mengirim langsung tanpa perlu persetujuan.
+
+### Aturan Status Dokumen
+
+- Surat berstatus `approved` **terkunci sepenuhnya** — tidak dapat diubah oleh siapapun termasuk Administrator.
+- Hanya pembuat surat yang dapat menghapus dokumennya, dan hanya jika masih berstatus `draft`.
+- Distribusi surat hanya dapat dilakukan oleh **Administrator**.
 
 ---
 
-## 12. Document Export & Printing
+## 11. Referensi API
 
-The system leverages browser-grade processing to convert real DOM layouts to digital physical counterparts without impacting Node.js performance.
+Semua endpoint membutuhkan header `Authorization: Bearer <TOKEN>` kecuali disebutkan lain.
 
-- **Library Methodology:** `html2pdf.js` constructs high fidelity visual clones of documents loaded dynamically within React, directly porting DOM trees into scalable PDF outputs.
-- **Print Layout Control:** System dynamically swaps print stylesheets alongside standard `window.print()` functionality to mask UI navigation shells and expose unadulterated document models.
+### Autentikasi
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| POST | `/api/auth/login` | Login dan mendapatkan JWT token |
+| POST | `/api/auth/logout` | Logout (hapus sesi klien) |
+
+### Dokumen
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| GET | `/api/documents` | Ambil semua dokumen sesuai hak akses pengguna |
+| POST | `/api/documents` | Buat dokumen baru |
+| GET | `/api/documents/generate-number` | Generate nomor surat otomatis |
+| GET | `/api/documents/:id` | Ambil detail satu dokumen |
+| PUT | `/api/documents/:id` | Update dokumen (konten, status, target) |
+| DELETE | `/api/documents/:id` | Hapus dokumen (draft saja, oleh pembuat atau admin) |
+| GET | `/api/documents/:id/logs` | Riwayat aktivitas dan perubahan status |
+| GET | `/api/documents/:id/versions` | Daftar semua versi dokumen |
+| POST | `/api/documents/:id/versions/:versionId/restore` | Kembalikan dokumen ke versi sebelumnya |
+| GET | `/api/documents/:id/work-logs` | Log waktu pengerjaan dokumen |
+| POST | `/api/documents/:id/work-logs` | Catat sesi pengerjaan dokumen |
+
+### Persetujuan Dokumen
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| GET | `/api/documents/:id/approvals` | Semua | Lihat rantai persetujuan |
+| POST | `/api/documents/:id/approvals/:approvalId/approve` | Reviewer, Admin | Setujui (ACC) satu tahap approval |
+| POST | `/api/documents/:id/approvals/:approvalId/reject` | Reviewer, Admin | Tolak dan kembalikan untuk perbaikan |
+| PUT | `/api/documents/:id/approvals/sequence` | Pembuat | Atur ulang urutan approval |
+
+### Distribusi Dokumen
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| GET | `/api/distributions/monitoring` | Semua | Data monitoring keterbacaan surat |
+| GET | `/api/distributions/:id` | Semua | Detail distribusi satu dokumen |
+| POST | `/api/distributions/:id` | Admin | Distribusikan surat ke penerima |
+
+### Pengguna
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| GET | `/api/users` | Semua | Daftar semua pengguna |
+| GET | `/api/users/:id` | Semua | Detail satu pengguna |
+| GET | `/api/users/me/available-groups` | Semua | Daftar divisi yang boleh dikirim |
+| PUT | `/api/users/profile/update` | Semua | Update profil sendiri (password) |
+| POST | `/api/users` | Admin | Buat pengguna baru |
+| PUT | `/api/users/:id` | Admin | Update data pengguna |
+| DELETE | `/api/users/:id` | Admin | Hapus pengguna |
+
+### Grup dan Folder
+| Method | Endpoint | Akses | Deskripsi |
+|---|---|---|---|
+| GET | `/api/groups` | Semua | Daftar semua grup/divisi |
+| POST | `/api/groups` | Admin | Buat grup baru |
+| PUT | `/api/groups/:id` | Admin | Update data grup |
+| DELETE | `/api/groups/:id` | Admin | Hapus grup |
+| GET | `/api/folders` | Semua | Daftar folder milik pengguna |
+| POST | `/api/folders` | Semua | Buat folder baru |
 
 ---
 
-## 13. Activity Logging & Auditing
+## 12. Fitur Cetak dan Ekspor PDF
 
-Comprehensive, fail-safe auditing spans the lifecycle of almost every database mutation entity. 
+Sistem memanfaatkan kemampuan cetak bawaan browser untuk menghasilkan output PDF berkualitas tinggi langsung dari tampilan dokumen.
 
-- `document_logs` captures state machines, specific JSON-traced modification differences (like "Subject changed from [A] to [B]"), alongside actor tracking.
-- `document_work_logs` functions to gather processing intervals & completion deltas.
-- `document_versions` retains hard carbon copies (snapshots) of earlier iterables rendering modifications entirely restorable.
-
----
-
-## 14. Production Deployment
-
-### Recommended Ecosystem (PM2 & Nginx)
-
-1. **Deploy Frontend:** Point Nginx root towards `frontend/dist`. Enable SPA routing rules (fallback to index.html).
-2. **Process Management:**
-   ```bash
-   npm install -g pm2
-   cd backend
-   pm2 start server.js --name "dof-backend" --env production
-   pm2 save
-   pm2 startup
-   ```
-3. **Reverse Proxy Hooks:** Connect Nginx to `/api` prefixes directing towards internal `localhost:5000`.
+- **Mekanisme:** Fungsi `window.print()` dipanggil dengan stylesheet cetak khusus yang menyembunyikan elemen UI (sidebar, toolbar) dan hanya menampilkan isi surat dalam format kertas A4.
+- **Tanda Tangan:** Tanda tangan canvas dan gambar yang diunggah ikut tercetak sebagai bagian dari dokumen.
+- **Format:** Output mengikuti format surat dinas resmi yang telah ditentukan, termasuk kop surat, nomor surat, dan kolom paraf.
 
 ---
 
-## 15. Active Directory / LDAP Integration
+## 13. Riwayat Aktivitas dan Audit Log
 
-The ecosystem carries dependencies (`ldapts`) designed natively for enterprise credentialing handshakes. Adjust endpoints in `/api/auth` or the internal auth service controllers to pivot from standard PostgreSQL `users` verification to LDAP bindings, matching organizational AD Forests over `ldap://` or `ldaps://`.
+Sistem mencatat secara komprehensif seluruh aktivitas yang terjadi pada setiap dokumen.
+
+### Tabel `document_logs`
+Mencatat setiap perubahan status dan konten dokumen, termasuk:
+- Siapa yang melakukan aksi dan kapan
+- Status sebelum dan sesudah perubahan
+- Ringkasan perubahan field secara spesifik (contoh: `Perihal: "A" → "B"`)
+
+### Tabel `document_versions`
+Menyimpan snapshot konten dokumen di setiap tahap perubahan. Versi dapat dikembalikan kapan saja oleh pembuat dokumen.
+
+- **Minor version** (contoh: 1.0 → 1.1): Terjadi saat konten diedit atau surat dikirim ulang setelah revisi.
+- **Major version** (contoh: 1.1 → 2.0): Terjadi saat surat diteruskan setelah berstatus terkirim.
+
+### Tabel `document_work_logs`
+Mencatat sesi pengerjaan dokumen per pengguna secara otomatis, mulai dari waktu membuka hingga menutup editor. Durasi minimum yang dicatat adalah 1 menit.
 
 ---
 
-## 16. Security Considerations
+## 14. Deployment Produksi
 
-- Passwords rest inside PSQL instances encoded via `bcryptjs` algorithms.
-- Hardened endpoints secured globally via `helmet`.
-- `express-rate-limit` actively manages connection bursting, mitigating DDOS or brute-force attack vectors towards vulnerable `/auth` routes.
-- Fully parameterized Prisma requests nullify traditional SQL Injection flaws.
+### Rekomendasi Stack: PM2 + Nginx
+
+**1. Build Frontend:**
+```bash
+cd frontend
+npm run build
+# File siap deploy ada di frontend/dist/
+```
+
+**2. Jalankan Backend dengan PM2:**
+```bash
+npm install -g pm2
+cd backend
+pm2 start server.js --name "dof-backend" --env production
+pm2 save
+pm2 startup
+```
+
+**3. Konfigurasi Nginx:**
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    # Serve React SPA
+    root /path/to/frontend/dist;
+    index index.html;
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy API ke backend
+    location /api/ {
+        proxy_pass http://localhost:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+---
+
+## 15. Pertimbangan Keamanan
+
+- **Enkripsi Password** — Semua password disimpan menggunakan `bcryptjs` dengan salt rounds 10. Hash format PHP Laravel (`$2y$`) dikonversi otomatis ke format Node.js (`$2a$`) untuk kompatibilitas.
+- **JWT Authentication** — Setiap request ke endpoint terproteksi diverifikasi menggunakan JWT. Token kadaluarsa akan mengembalikan error 401.
+- **HTTP Security Headers** — Seluruh response dilindungi oleh `helmet` yang mengatur header seperti `Content-Security-Policy`, `X-Frame-Options`, dan lainnya.
+- **Rate Limiting** — `express-rate-limit` membatasi jumlah request ke endpoint `/auth` untuk mencegah serangan brute-force.
+- **SQL Injection Prevention** — Seluruh query database menggunakan Prisma ORM dengan parameterisasi otomatis, menghilangkan risiko SQL injection.
+- **Validasi Input** — Semua input dari klien divalidasi menggunakan skema Zod sebelum diproses oleh service layer.
+- **Immutable Document Lock** — Dokumen yang berstatus `approved` dikunci secara permanen di level service. Sistem melempar `BadRequestError` jika ada upaya mengubah konten dokumen yang sudah final.
+- **Pembatasan Akses Berbasis Jabatan** — Fungsi `canSendDocument()` memvalidasi hak kirim antar divisi berdasarkan jabatan pengguna di setiap operasi pengiriman surat.

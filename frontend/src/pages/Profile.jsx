@@ -69,10 +69,10 @@ const Profile = () => {
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
 
                     {/* Cover & Avatar */}
-                    <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-600 relative">
+                    <div className="h-32 bg-gradient-to-r from-slate-800 to-teal-800 relative">
                         <div className="absolute -bottom-10 left-6">
                             <div className="w-20 h-20 rounded-2xl bg-white p-1 shadow-md">
-                                <div className="w-full h-full rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-indigo-600 font-bold text-2xl">
+                                <div className="w-full h-full rounded-xl bg-teal-50 flex items-center justify-center text-teal-700 font-bold text-2xl">
                                     {user.name?.charAt(0)}
                                 </div>
                             </div>
@@ -83,7 +83,11 @@ const Profile = () => {
 
                         {/* Status Message */}
                         {status && (
-                            <div className={`p-4 rounded-xl flex items-start gap-3 text-sm font-medium ${status.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                            <div className={`p-4 rounded-xl flex items-start gap-3 text-sm font-medium ${
+                                status.type === 'error'
+                                    ? 'bg-red-50 text-red-800 border border-red-200'
+                                    : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                            }`}>
                                 {status.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
                                 {status.message}
                             </div>
@@ -123,33 +127,33 @@ const Profile = () => {
                             </h2>
                             <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-md">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password Saat Ini</label>
+                                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Password Saat Ini</label>
                                     <input
                                         type="password"
                                         required
                                         value={currentPassword}
                                         onChange={e => setCurrentPassword(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 outline-none transition-all text-slate-900"
                                         placeholder="Masukkan password lama..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password Baru</label>
+                                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Password Baru</label>
                                     <input
                                         type="password"
                                         value={password}
                                         onChange={e => setPassword(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 outline-none transition-all text-slate-900"
                                         placeholder="Min. 8 karakter..."
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Konfirmasi Password Baru</label>
+                                    <label className="block text-sm font-semibold text-slate-800 mb-1.5">Konfirmasi Password Baru</label>
                                     <input
                                         type="password"
                                         value={confirmPassword}
                                         onChange={e => setConfirmPassword(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 outline-none transition-all text-slate-900"
                                         placeholder="Ulangi password baru..."
                                     />
                                 </div>
@@ -157,7 +161,7 @@ const Profile = () => {
                                 <button
                                     type="submit"
                                     disabled={loading || !password}
-                                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                    className="w-full py-2.5 px-4 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {loading ? 'Menyimpan...' : 'Simpan Password Baru'}
                                 </button>

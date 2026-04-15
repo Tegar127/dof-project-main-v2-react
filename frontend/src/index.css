@@ -99,11 +99,11 @@
 
 .form-label-styled {
     display: block;
-    font-size: 0.625rem;
-    font-weight: 900;
-    color: #94a3b8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.1em;
     margin-bottom: 0.5rem;
 }
 
@@ -209,7 +209,7 @@
 }
 
 .quill-wrapper .ql-editor.ql-blank::before {
-    color: #94a3b8;
+    color: #64748b;
     font-style: normal;
     font-weight: 400;
     font-size: 0.875rem;
@@ -337,10 +337,10 @@
 
 .section-heading h3 {
     font-size: 0.75rem;
-    font-weight: 900;
+    font-weight: 700;
     color: #1e293b;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     display: flex;
     align-items: center;
     gap: 0.5rem;
